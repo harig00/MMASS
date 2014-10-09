@@ -36,8 +36,9 @@ if ~isempty(E) && ~isempty(v)
   
   % Here is the "delta method", which is approximate
   stdTedelta=sqrt(truecov(1,1))/th0(1)^(2/3)/3*[12*(1-v^2)/E]^(1/3);
-  disp(sprintf('thrtcl 1 std %3.2f km',stdTe/1000))
-  disp(sprintf('thrtcl 2 std %3.2f km',stdTedelta/1000))
+
+  disp(sprintf('Stdv of the Te predicted by simulation:  %3.2f km',stdTe/1000))
+  disp(sprintf('Stdv of the Te predicted by delta meth:  %3.2f km\n',stdTedelta/1000))
   
   % True parameters and their theoretical uncertainties
   answ{1}=sprintf('E = %g',E);

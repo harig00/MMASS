@@ -1,5 +1,5 @@
-function oswzerob(fid,th0,params,options,fmt1,fmt2)
-% OSWZEROB(fid,th0,params,options,fmt1,fmt2)
+function oswzerob(fid,th0,params,options,bounds,fmt1,fmt2)
+% OSWZEROB(fid,th0,params,options,bounds,fmt1,fmt2)
 % 
 % Writes the beginning of a THZRO file as we have come to use it 
 %
@@ -9,13 +9,14 @@ function oswzerob(fid,th0,params,options,fmt1,fmt2)
 % th0        The parameter vector (see, e.g., SIMULOS)
 % params     A structure with the known constants (see, e.g. SIMULOS)
 % options    The options used by the optimization procedure
+% bounds     The bounds used by the optimization procedure
 % fmt1...    Strings containing formatting instructions (from OSOPEN)
 %
 % SEE ALSO: 
 %
 % OSWZEROE, OSRZERO
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/06/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/08/2014
 
 % Commit the truth to file
 fprintf(fid,'%s\n','the true parameter vector');
@@ -25,6 +26,22 @@ fprintf(fid,fmt1,th0);
 fprintf(fid,'%s\n','the fixed experimental parameters');
 fprintf(fid,fmt2,struct2array(params));
 
+% Convert the bounds to something printable
+fprintf(fid,'%s\n','the bounds, if any');
+if ~isempty(bounds)
+  struct2str(cell2struct(bounds,...
+		    {'A',  'B'  ,... % Linear Inequalities
+		    'Aeq','Beq',... % Linear Equalities
+		    'LB',...        % Lower Bounds
+		    'UB',...        % Upper Bounds
+		    'NONLCON'},...   % Nonlinear Inequalities
+			 2),fid);
+else
+  % We need at least one colon on the next line
+  struct2str(cell2struct({'None'},{'Bounds'},2),fid)
+end
+
 % Commit the parameters of the optimization to file
 fprintf(fid,'%s\n','the optimization options');
 struct2str(options,fid)
+

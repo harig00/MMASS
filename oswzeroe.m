@@ -17,7 +17,7 @@ function oswzeroe(fid,scl,avlin,good,Flin,covlin,fmtc,fmte,fmtf)
 %
 % OSWZEROB, OSRZERO
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/04/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/06/2014
 
 % Print the single scaling of the theoretical values that was used 
 fprintf(fid,'%s\n','the experimental scaling factors');
@@ -28,11 +28,11 @@ fprintf(fid,'%s\n','the theoretical covariance');
 fprintf(fid,fmtf,covlin);
 
 % Print the theoretical average of the Hessians
-fprintf(fid,'%s\n','the Fisher matrix');
+fprintf(fid,'%s\n','the scaled Fisher matrix');
 fprintf(fid,fmte,Flin);
 
 % Print the observed average of the Hessians (over last set of runs)
 fprintf(fid,'%s\n',...
-        sprintf('the Hessian matrix averaged over whichever %i runs last output',...
+        sprintf('the scaled Hessian matrix averaged over whichever %i runs last output',...
                 good));
 fprintf(fid,fmte,avlin);

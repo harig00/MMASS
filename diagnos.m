@@ -75,9 +75,9 @@ for index=1:ndim
   % The estimates, and the scaled spatial sample variance(s)
   thhat(index,:)=fscanf(fid,'%e',np+nvar);
   % Three diagnostics
-  tseiter(index,:)=fscanf(fid,'%i',3);
+  tseiter(index,:)=fscanf(fid,'%i',3); 
   % The likelihood
-  L(index)=fscanf(fid,'%e',1);
+  L(index)=fscanf(fid,'%e',1); 
   % The first-order optimality criterion
   optis(index)=fscanf(fid,'%e',1);
   % The scalings

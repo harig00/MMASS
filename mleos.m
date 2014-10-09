@@ -1,6 +1,6 @@
-function varargout=mleos(Hx,Gx,thini,params,algo)
+function varargout=mleos(Hx,Gx,thini,params,algo,bounds)
 % [thhat,logli,thini,scl,params,eflag,oput,grd,hes,Hk,k]=...
-%          MLEOS(Hx,Gx,thini,params,algo)
+%          MLEOS(Hx,Gx,thini,params,algo,bounds)
 %
 % Performs a maximum-likelihood estimation for UNCORRELATED loads as in
 % Olhede & Simons (2013) by minimization using FMINUNC/FMINCON.
@@ -22,6 +22,8 @@ function varargout=mleos(Hx,Gx,thini,params,algo)
 %           kiso   wavenumber beyond which we are not considering the likelihood
 % algo     'unc' uses FMINUNC
 %          'con' uses FMINCON with positivity constraints [default]
+%          'klose' simply closes out a run that got stuck
+% bounds    A cell array with those positivity constraints [defaulted]
 %
 % OUTPUT:
 %
@@ -37,6 +39,8 @@ function varargout=mleos(Hx,Gx,thini,params,algo)
 % hes      The Hessian at the estimate
 % Hk       The spectral-domain interface topographies after deconvolution 
 % k        The wavenumbers on which the estimate is actually based
+% options  The options used by the optimization procedure
+% bounds   The bounds used by the optimization procedure
 %
 % NOTE: 
 %
@@ -60,21 +64,26 @@ function varargout=mleos(Hx,Gx,thini,params,algo)
 
 if ~isstr(Hx)
   defval('algo','con')
-
+  if strcmp(algo,'con')
+    % Parameters for FMINCON in case that's what's being used
+    bounds={[],[],... % Linear inequalities
+	    [],[],... % Linear equalities
+	    [eps eps eps eps eps]*100,... % Lower bounds
+	    [Inf Inf Inf Inf Inf],... % Upper bounds
+	    []}; % Nonlinear (in)equalities
+  else
+    bounds=[];
+  end
   % The necessary strings for formatting
   str0='%15s';
   str1='%12.0e ';
   str2='%12.5g ';
   
-  % Get or supply the needed parameters
+  % Supply the needed parameters, keep the givens, extract to variables
   fields={'DEL','g','z2','dydx','NyNx','blurs','kiso'};
   defstruct('params',fields,...
 	    {[2670 630],9.81,35000,[20 20]*1e3,sqrt(length(Hx))*[1 1],2,NaN});
-  
-  % Extract the variables explicitly from this structure
-  for ind=1:length(fields)
-    eval(sprintf('%s=params.(fields{ind});',fields{ind}))
-  end
+  struct2var(params)
   
   % The gravitational constant (in m^3/kg/s2)
   G=fralmanac('GravCst');
@@ -183,15 +192,16 @@ if ~isstr(Hx)
       t0=clock;
       [thhat,logli,eflag,oput,lmd,grd,hes]=...
 	  fmincon(@(theta) loglios(theta,params,Hk,k,scl),...
-		  thini,... % Initial values
-		  [],[],... % Linear inequalities
-		  [],[],... % Linear equalities
-		  [eps eps eps eps eps]*100,... % Lower bounds
-		  [Inf Inf Inf Inf Inf],... % Upper bounds
-		  [],... % Nonlinear (in)equalities
-		  options ... % Options
-		  );
+		  thini,...
+		  bounds{1},bounds{2},bounds{3},bounds{4},bounds{5},bounds{6},bounds{7},...
+		  options);
       ts=etime(clock,t0);
+     case 'klose'
+       % Simply a "closing" run to return the options
+       varargout=cellnan(nargout,1,1);
+       varargout{end-1}=options;
+       varargout{end}=bounds;
+       return
     end
     disp(sprintf('%8.3gs per %i iterations or %8.3gs per %i function counts',...
 	 ts/oput.iterations*100,100,ts/oput.funcCount*1000,1000))
@@ -211,7 +221,7 @@ if ~isstr(Hx)
 	       'Estimated theta',thhat.*scl))
 
   % Generate output as needed
-  varns={thhat,logli,thini,scl,params,eflag,oput,grd,hes,Hk,k};
+  varns={thhat,logli,thini,scl,params,eflag,oput,grd,hes,Hk,k,options,bounds};
   varargout=varns(1:nargout);
 elseif strcmp(Hx,'demo1')
   % If you run this again on the same date, we'll just add to THINI and
@@ -242,14 +252,16 @@ elseif strcmp(Hx,'demo1')
     [Hx,Gx,th0,p,k]=simulos([],[]);
     % Check the dimensions of space and spectrum are right
     difer(length(Hx)-length(k(:)),[],[],NaN)
-    % Initialize the THZRO file
-    if index==1
-      oswzerob(fid0,th0,p,fmt1,fmt2)
-    end
+
     % Form the maximum-likelihood estimate
     t0=clock;
-    [thhat,logli,thini,scl,p,e,o,gr,hs]=mleos(Hx,Gx,[],[]);
+    [thhat,logli,thini,scl,p,e,o,gr,hs,~,~,ops,bnds]=mleos(Hx,Gx,[],[]);
     ts=etime(clock,t0);
+
+    % Initialize the THZRO file
+    if index==1
+      oswzerob(fid0,th0,p,ops,bnds,fmt1,fmt2)
+    end
 
     % If a model was found, keep the results, if not, they're all NaNs
     % Ignore the fact that it may be at the maximum number of iterations
@@ -303,7 +315,8 @@ elseif strcmp(Hx,'demo1')
   if N==0; 
     [Hx,Gx,th0,p,k]=simulos([],[]); 
     good=1; avhs=avhs+1; 
-    oswzerob(fid0,th0,p,fmt1,fmt2)
+    [~,~,~,~,pp,~,~,~,~,~,~,ops,bnds]=mleos(Hx,Gx,[],[],'klose');
+    oswzerob(fid0,th0,p,ops,bnds,fmt1,fmt2)
   end
   
   if good>=1

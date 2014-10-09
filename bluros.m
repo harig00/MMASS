@@ -29,7 +29,7 @@ function Sbar=bluros(S,params,xver)
 % set(gca,'ytick',[0 th0(1) indeks(ylim,2)])
 % print('-depsc','/u/fjsimons/EPS/simulosl')
 %
-% Last modified by fjsimons-at-alum.mit.edu, 04/08/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/08/2014
 
 % Set defaults
 defval('xver',1)
@@ -84,7 +84,7 @@ if [ky(1)-ky2(1)]<0; ky2(1)=ky(1); end
 Sbar=nan(prod(NyNx),size(S,2));
 % Make sure there are no NaNs in the output
 for in=1:size(S,2)
-    % Later, consider griddedInterpolant
+  % Later, consider griddedInterpolant
   Sbar(:,in)=indeks(...
       interp2(kx2(:)',ky2(:),...
 	      conv2(Fejk,reshape(S(:,in),NyNx2),'same'),...
@@ -92,8 +92,10 @@ for in=1:size(S,2)
 end
 
 % Check that no extrapolation was demanded, effectively
-% but know that griddedInterpolant would have extrapolated fine
-difer(sum(isnan(Sbar(:))),[],[],NaN)
+% but know that griddedInterpolant would have EXTRApolated fine
+difer(sum(isnan(Sbar(:))),[],2,NaN)
+
+%% If something is wrong, this gets messed up
 
 % Check the eigenvalues of Sbar for being real and positive
 if xver==1 && size(Sbar,2)==3

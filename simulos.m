@@ -3,9 +3,7 @@ function varargout=simulos(th0,params,xver)
 %
 % Simulates data under the UNCORRELATED two-layer Forsyth model as used
 % by Olhede & Simons with the primary spectra S11 etc being the
-% equilibrium-loading ones. So we are not simulating initial loads and then
-% performing the flexural elastic compensation; rather we are simulating
-% the effects under such an elastic compensation model.
+% equilibrium-loading ones.
 %
 % S11 is the power spectral density of the EQUILIBRIUM load at interface 1.
 %
@@ -29,8 +27,8 @@ function varargout=simulos(th0,params,xver)
 %
 % OUTPUT:
 %
-% Hx       Real matrix of spatial-domain observations [m], see Hk
-% Gx       Real vector with Bouguer gravity anomaly data [mgal]
+% Hx       Real matrix of spatial-domain observations [m m], see Hk
+% Gx       Real vector with Bouguer gravity anomaly data [m/s^2]
 % th0      The true parameter vector pertaining to this data
 % params   The structure with the known knowns, see above
 % k        Wavenumber(s) suitable for the data sets returned [rad/m]
@@ -52,35 +50,31 @@ function varargout=simulos(th0,params,xver)
 %
 % MLEOS, LOADING, SIMULROS
 %
-% Last modified by fjsimons-at-alum.mit.edu, 04/30/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/08/2014
 
 % Check how it behaves when NOT a power of two! FFT should still be exact
 % so wouldn't matter. Implement the windowing!
 
-% This corresponding to random guesses for the parameters in MLEOS
-aguess=[1e24 0.8 0.0025 2 2e4];
-%aguess=[7e22 0.4 0.0025 2 2e4];
-
 % Here is the true parameter vector and the only variable that gets used 
-defval('th0',aguess);
+defval('th0',[1e24 0.8 0.0025 2 2e4]);
 
-% Here is the extra verification parameters
-defval('xver',1)
-
+% If not a demo...
 if ~isstr(th0)
-  % Get or supply the needed additional parameters
-  fields={'DEL','g','z2','dydx','NyNx','blurs'};
+  % Supply the needed parameters, keep the givens, extract to variables
+  fields={'DEL','g','z2','dydx','NyNx','blurs','kiso'};
   defstruct('params',fields,...
-	    {[2670 630],9.81,35000,[20 20]*1e3,[128 128]/2,2});
+	    {[2670 630],9.81,35000,[20 20]*1e3,[128 128]/2,2,NaN});
+  struct2var(params)
+
+  % Here is the extra verification parameter
+  defval('xver',1)
+
+  % To create the gravity observation also
+  G=fralmanac('GravCst');
 
   if xver==1
     % Dump to screen
     osdisp(th0,params)
-  end
-  
-  % Extract the variables explicitly from this structure
-  for ind=1:length(fields)
-    eval(sprintf('%s=params.(fields{ind});',fields{ind}))
   end
   
   % First make the wavenumbers, given the data size and the data length
@@ -99,7 +93,7 @@ if ~isstr(th0)
 
   switch blurs
    case {0,1}
-    disp('SIMULOS without BLURRING')
+    disp(sprintf('%s without BLURRING',mfilename))
     % Now make the spectral-spectral portion of the spectral matrix
     S11=maternos(k,th0);
     % The Cholesky decomposition of the lithospheric-spectral matrix
@@ -117,7 +111,7 @@ if ~isstr(th0)
     % all. Run Fk for this case to see it then would be a delta function
     
     % Blurs IS the refinement parameter; make new wavenumber grid
-    disp(sprintf('SIMULROS with BLURRING factor %i',blurs))
+    disp(sprintf('%s with BLURRING factor %i',mfilename,blurs))
     k2=knums(params,1);
 
     % Now make the spectral-spectral portion of the spectral matrix
@@ -127,8 +121,13 @@ if ~isstr(th0)
     % Which we multiply by the spectral-spectral portion
     S=[S11.*T(:,1) S11.*T(:,2) S11.*T(:,3)];
     
-    % Now do the blurring and subsampling to original grid
-    Sb=bluros(S,params,1);
+    % Make the gravity BEFORE blurring says SCO
+    % FJS to change
+    % SG2=[2*pi*G*DEL(2)*exp(-k(:).*z2)]   .*S(:,2);
+    % SG3=[2*pi*G*DEL(2)*exp(-k(:).*z2)].^2.*S(:,3);
+
+    % Now do the blurring and subsampling/interpolation to original grid
+    Sb=bluros(S,params,xver);
     
     % imagesc(decibel(Fejk))
     % Old, isotropic, unblurred
@@ -142,14 +141,13 @@ if ~isstr(th0)
     Lb=[sqrt(Sb(:,1)) Sb(:,2)./sqrt(Sb(:,1)) ...
 	sqrt((Sb(:,1).*Sb(:,3)-Sb(:,2).^2)./Sb(:,1))];
 
-    % Could do CHOLCHECK here
+    % Should make sure that this is real! 
+    Lb=realize(Lb);
+
     if xver==1
       cholcheck(Lb,Sb,6,1)
       cholcheck(Lb,Sb,6,2)
     end
-        
-    % Should make sure that this is real! 
-    Lb=realize(Lb);
   end
   % Blurred or unblurred, go on
 
@@ -162,14 +160,13 @@ if ~isstr(th0)
     % This should be 1
     difer(Lb(:,1)-1,[],[],NaN)
     % This should have some relation to airyratio
-    airyratio=params.DEL(1)/params.DEL(2);
+    airyratio=DEL(1)/DEL(2);
     difer(Lb(:,2)+airyratio,[],[],NaN)
     % This should be 0
     difer(Lb(:,3),[],[],NaN)
   end
     
-  % Now create the gravity observation also
-  G=fralmanac('GravCst');
+  % FJS need to change this to blur the chi rather than chi the blur 03/19/2014
   % With this sign convention the depth is positive
   Gk=2*pi*G*DEL(2)*exp(-k(:).*z2).*Hk(:,2);
 
@@ -183,26 +180,25 @@ if ~isstr(th0)
   varargout=varns(1:nargout);
 elseif strcmp(th0,'demo1')
   svnm=th0;
-  [Hx,Gx,th0,p,k,Hk,Gk]=simulos;
+  [Hx,Gx,th0,p,k,Hk,Gk]=feval(mfilename);
+  struct2var(p)
+
   clf
   kelicol
   [ah,ha]=krijetem(subnum(2,2));
   [tl(1),cb(1),xc(1),xa(1)]=plotit(ah(1),Hx(:,1)/1000,size(k),...
 		       'final surface','topography (%s)','km');
   [tl(2),cb(2),xc(2),xa(2)]=plotit(ah(2),Hx(:,2)/1000,size(k),sprintf(...
-      'final subsurface z_2 = %i km',round(p.z2/1000)),'topography (%s)','km');
+      'final subsurface z_2 = %i km',round(z2/1000)),'topography (%s)','km');
   [tl(3),cb(3),xc(3),xa(3)]=plotit(ah(3),Gx*1e5,size(k),sprintf(...
       'gravity anomaly with %s%s = %i kg m^{-3}',...
-      '\Delta','\rho',p.DEL(2)),'Bouguer anomaly (%s)','mgal');
+      '\Delta','\rho',DEL(2)),'Bouguer anomaly (%s)','mgal');
 
   % Maybe we can calculate the coherence here also?
   %   NW=3;
   %   [FX,FY,SX,SY,SXY,COH2]=...
   %     mtm3(reshape(Hx(:,1),NyNx),reshape(Gx,NyNx),NW,max(round(2*NW)-2,1));
   
-  NyNx=p.NyNx;
-  dydx=p.dydx;
-
   % Cosmetics
   they=linspace(1,NyNx(1),5);
   thex=linspace(1,NyNx(2),5);
@@ -242,12 +238,12 @@ elseif strcmp(th0,'demo2')
   nu=0.5;
   rho=30000;
   z2=15000;
-  % Perform the simulation
+  % Perform the simulation... not complete
   [Hx,Gx,th0,k,Hk,Gk,params]=simulos;
 elseif strcmp(th0,'demo3')
   params.blurs=2;
   params.NyNx=[128 128];
-  [Hx,Gx,th0,params,k,Hk,Gk,Sb,Lb]=simulos([],params); 
+  [Hx,Gx,th0,params,k,Hk,Gk,Sb,Lb]=feval(mfilename,[],params); 
   Lk=Lkos(k,th0,params,Hk); 
   imagesc(decibel(v2s(Lk)))
   axis image
@@ -266,7 +262,6 @@ else
   limc=round(limc);
 end
 
-%shrink(aha,1.2,1.2)
 set(aha,'clim',limc)
 tls=title(stronk);
 xa=xlabel(sprintf('mean %+6.3f ; stdev %6.3f %s',...

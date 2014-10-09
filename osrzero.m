@@ -28,14 +28,27 @@ fgetl(fid); fgetl(fid);
 
 % If this involves gravity - or not
 if np>=5
-  p=fscanf(fid,'%f',9)';
+  p=fscanf(fid,'%f',10)';
 else
-  p=fscanf(fid,'%f',5)';
+  p=fscanf(fid,'%f',6)';
+end
+
+% Here you need to read the optimization options until you're done
+fgetl(fid); fgetl(fid);
+g=':';
+while ~isempty(strfind(g,':'))
+  g=fgetl(fid);
+end
+
+% Here you need to read the optimization bounds until you're done
+fgetl(fid);
+g=':';
+while ~isempty(strfind(g,':'))
+  g=fgetl(fid);
 end
 
 % The scale used in the optimization
 % Only once for some legacy code 
-fgetl(fid); fgetl(fid);
 scl=fscanf(fid,'%f',np)';
 
 % This is the theoretical covariance of the estimate
@@ -62,3 +75,4 @@ avHes=fscanf(fid,'%f',npp)';
 fullcov=zeros(np,np);
 fullcov(nonzeros(triu(reshape(1:np^2,np,np)')'))=truecov;
 truecov=[tril(fullcov)'+tril(fullcov)-diag(diag(fullcov))];
+

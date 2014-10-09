@@ -14,7 +14,7 @@ function [fid0,fid1,fid2,fid3,fmt1,fmt2,fmt3,fmtf,fmte,fmtd,fmtc,fmtb,fmta]=...
 %
 % OSLOAD, DIAGNOS (with which it needs to match!)
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/02/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/06/2014
 
 % Who called? Work this into the filenames
 [~,n]=star69;
@@ -43,11 +43,11 @@ end
 
 % Output formatting for the simulation parameters
 if np>=5
-  %     DEL     g  z2  dydx  NyNx  blurs
-  fmt2='%i %i %5.2f %i %i %i %i %i %i\n';
+  %     DEL     g  z2  dydx  NyNx  blurs kiso
+  fmt2='%i %i %5.2f %i %i %i %i %i %i %f\n';
 else
-  %     dydx  NyNx  blurs
-  fmt2='%i %i %i %i %i\n';
+  %     dydx  NyNx  blurs kiso
+  fmt2='%i %i %i %i %i %f\n';
 end
 
 % For the time, exit flag, iterations 
