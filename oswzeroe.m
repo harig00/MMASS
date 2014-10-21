@@ -28,7 +28,7 @@ fprintf(fid,'%s\n','the theoretical covariance');
 fprintf(fid,fmtf,covlin);
 
 % Print the theoretical average of the Hessians
-fprintf(fid,'%s\n','the scaled Fisher matrix');
+fprintf(fid,'%s\n','the unblurred scaled Fisher matrix');
 fprintf(fid,fmte,Flin);
 
 % Print the observed average of the Hessians (over last set of runs)

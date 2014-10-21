@@ -29,7 +29,7 @@ function Sbar=bluros(S,params,xver)
 % set(gca,'ytick',[0 th0(1) indeks(ylim,2)])
 % print('-depsc','/u/fjsimons/EPS/simulosl')
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/08/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/20/2014
 
 % Set defaults
 defval('xver',1)

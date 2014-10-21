@@ -61,6 +61,8 @@ thhat=deal(nan(ndim,np+nvar));
 [thini,gam]=deal(nan(ndim,np));
 hes=nan(ndim,npp);
 
+% Rarely, in SPMD mode does the file get written too quickly and does a
+% confusion between labs happen - look into the file and fix easily
 % Read the contents
 fid=fopen(fullfile(ddir,fname),'r');
 for index=1:ndim
@@ -74,10 +76,10 @@ for index=1:ndim
   end
   % The estimates, and the scaled spatial sample variance(s)
   thhat(index,:)=fscanf(fid,'%e',np+nvar);
-  % Three diagnostics
+  % Three diagnostics (time taken, exitflag, number of iterations)
   tseiter(index,:)=fscanf(fid,'%i',3); 
   % The likelihood
-  L(index)=fscanf(fid,'%e',1); 
+  L(index)=fscanf(fid,'%e',1); L(index);
   % The first-order optimality criterion
   optis(index)=fscanf(fid,'%e',1);
   % The scalings

@@ -50,7 +50,7 @@ function varargout=simulos(th0,params,xver)
 %
 % MLEOS, LOADING, SIMULROS
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/08/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/13/2014
 
 % Check how it behaves when NOT a power of two! FFT should still be exact
 % so wouldn't matter. Implement the windowing!
@@ -86,14 +86,15 @@ if ~isstr(th0)
   % Now construct the whole-spectral matrix
   Z1=randgpn(k,dci,dcn);
   Z2=randgpn(k,dci,dcn);
-  disp(sprintf('Z1: mean %+6.3f ; stdev %6.3f',...
-	       mean(Z1(:)),std(Z1(:))))
-  disp(sprintf('Z2: mean %+6.3f ; stdev %6.3f',...
-	       mean(Z2(:)),std(Z2(:))))
+  % This cramps the style
+  %   disp(sprintf('Z1: mean %+6.3f ; stdev %6.3f',...
+  % 	       mean(Z1(:)),std(Z1(:))))
+  % disp(sprintf('Z2: mean %+6.3f ; stdev %6.3f',...
+  % 	       mean(Z2(:)),std(Z2(:))))
 
   switch blurs
    case {0,1}
-    disp(sprintf('%s without BLURRING',mfilename))
+    % disp(sprintf('%s without blurring',upper(mfilename)))
     % Now make the spectral-spectral portion of the spectral matrix
     S11=maternos(k,th0);
     % The Cholesky decomposition of the lithospheric-spectral matrix
@@ -110,8 +111,8 @@ if ~isstr(th0)
     % same grid would be the "inverse crime" of not changing the grid at
     % all. Run Fk for this case to see it then would be a delta function
     
+    % disp(sprintf('%s with blurring factor %i',upper(mfilename),blurs))
     % Blurs IS the refinement parameter; make new wavenumber grid
-    disp(sprintf('%s with BLURRING factor %i',mfilename,blurs))
     k2=knums(params,1);
 
     % Now make the spectral-spectral portion of the spectral matrix

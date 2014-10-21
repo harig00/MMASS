@@ -6,7 +6,7 @@ function t=ostitle(ah,params,ovall,numsim)
 % INPUT:
 %
 % ah          Axis handles over which to put the title
-% params      Parameters that make it into the title string, vector or structure
+% params      Parameter structure that make it into the title string, vector or structure
 % ovall       Overall plot title for identification
 % numsim      Number of simulations to work in the title
 %
@@ -14,7 +14,7 @@ function t=ostitle(ah,params,ovall,numsim)
 %
 % t           Title handle
 %
-% Last modified by fjsimons-at-alum.mit.edu, 07/02/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/19/2014
 
 defval('ovall','')
 defval('numsim','')
@@ -33,26 +33,18 @@ else
   str5='%s%swith %ix%i grid ; %ix%i km ; blur %i';
 end
 
-% This is a bit too dependent on the order they come out
-if isstruct(params)
-  params=struct2array(params);
-end
+% Move away from numbered to named access to the params...
+struct2var(params)
 
-if isfield(params,'kiso')
-  % Reorganize the kiso parameter to be at the end if it exists
-  params=[params(2:end) params(1)];
-end
-
-% Should move away from numbered to named access to the params...
 % Conditions pertain to cases with and without the kiso parameter
 % present, which really should be recorded in the simulations
-if length(params)>=9
+if length(fieldnames(params))>=7
   t=supertit(ah,sprintf(str9,ovall,mlest,...
-      '\Delta',params(1),'\Delta',params(2),'kg m^{-3}',...
-      params(4)/1e3,params(7:8),round(params(7:8).*params(5:6)/1e3),params(9)));
-elseif length(params)>=5
+      '\Delta',DEL(1),'\Delta',DEL(2),'kg m^{-3}',...
+      z2/1e3,NyNx,dydx.*NyNx/1e3,blurs));
+elseif length(fieldnames(params))>=4
   t=supertit(ah,sprintf(str5,ovall,mlest,...
-      params(3:4),round(params(3:4).*params(1:2)/1e3),params(5)));
+      NyNx,dydx.*NyNx/1e3,blurs));
 else
   error('OSTITLE: Not the expected number of fixed parameters!')
 end

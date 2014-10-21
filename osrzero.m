@@ -76,3 +76,5 @@ fullcov=zeros(np,np);
 fullcov(nonzeros(triu(reshape(1:np^2,np,np)')'))=truecov;
 truecov=[tril(fullcov)'+tril(fullcov)-diag(diag(fullcov))];
 
+
+

@@ -20,7 +20,7 @@ function varargout=osdisp(th0,thhats,nl,avhs,Fisher,truecov)
 %
 % The strings used 
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/07/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/20/2014
 
 % The necessary strings for formatting
 str0='%27s';
@@ -47,6 +47,7 @@ elseif length(th0)==3
 end
 
 % Don't use STRUC2ARRAY since we want them in our own order
+% But see the reordering solution in OSWZEROB
 if isstruct(thhats) && nargin==2
   params=thhats;
   if length(th0)>3
@@ -64,11 +65,11 @@ else
   % Estimated values
   disp(sprintf(sprintf('%s : %s \n',str0,str1s),...
 	       'Average estimated theta',mean(thhats,1)))
-  % Average Hessian and Fisher matrix... just forget about this
-  % disp(sprintf('Over %i simulations, the average Hessian and the Fisher matrix are',nl))
-  % disp(sprintf(...
-  %     '|%4.2f|%s apart on average (the diagn file has the full information)',...
-  %     1/100*round(100*mean(abs([avhs-Fisher]'./Fisher'*100))),'%'))
+  % Average Hessian and Fisher matrix
+   disp(sprintf('Over %i simulations, the average Hessian and the unblurred Fisher matrix are',nl))
+   disp(sprintf(...
+       '|%4.2f|%s apart on average (the relevant diagn file had the full information)',...
+       1/100*round(100*mean(abs([avhs-Fisher]'./Fisher'*100))),'%'))
   
   % Covariance, relative, empirical, and theoretical
   disp(sprintf(sprintf('%s : %s',str0,str1s),...

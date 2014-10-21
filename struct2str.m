@@ -12,7 +12,7 @@ function varargout=struct2str(strux,fid)
 %
 % strux       The structure array after blank removal
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/06/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/13/2014
 
 defval('fid',[])
 
@@ -36,6 +36,7 @@ if nargout==0
   else
     for index=1:length(fn)
       fni=fn{index};
+      % The formatting limitations of NUM2STR are offset by its flexibility
       fprintf(fid,'%22s:%20s\n',fni,num2str(strux.(fni)));
     end
   end

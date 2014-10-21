@@ -1,7 +1,7 @@
 function Sk=maternos(k,th0s,varargin)
 % Sk=MATERNOS(k,[s2 nu rho],d)
 %
-% Calculates the three-parameter isotropic TWO-dimensional Matern
+% Calculates the three-parameter isotropic d-dimensional Matern
 % spectral density used by Olhede & Simons (2013).
 %
 % INPUT:
@@ -21,7 +21,7 @@ function Sk=maternos(k,th0s,varargin)
 %
 % MATERNPRC, MATERNOS2D
 %
-% Last modified by fjsimons-at-alum.mit.edu, 06/27/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/18/2014
 
 % These are always the last three elements of the input 
 s2=th0s(end-2);

@@ -32,7 +32,7 @@ function [L,gam]=loglios(th,params,Hk,k,scl)
 %
 % FISHERKOS, which should be incorporated at a later stage
 %
-% Last modified by fjsimons-at-alum.mit.edu, 04/15/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/20/2014
 
 % Default scaling is none
 defval('scl',ones(size(th)))
@@ -62,7 +62,7 @@ end
   
 % Get the scores at the individual wavenumbers; average
 switch params.blurs
-  case {0.1}
+  case {0,1}
    gam=-nanmean(gammakos(k,th,params,Hk));
    % The correct gradient is too heterogeneous to be good so scale
    gam=gam.*scl;

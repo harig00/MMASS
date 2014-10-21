@@ -17,7 +17,7 @@ function varargout=mleplos(thhats,th0,truecov,E,v,params,name)
 % truecov    The theoretical covariance matrix
 % E          Young's modulus (not used for single fields)
 % v          Poisson's ratio (not used for single fields)
-% params     The parameters from the experiment
+% params     The structure with the fixed parameters from the experiment
 % name       A name string for the title
 %
 % OUTPUT:
@@ -28,7 +28,7 @@ function varargout=mleplos(thhats,th0,truecov,E,v,params,name)
 %
 % This only gets used in MLEOS/MLEROS/MLEROS0/MLEOSL thus far
 %
-% Last modified by fjsimons-at-alum.mit.edu, 07/09/2013
+% Last modified by fjsimons-at-alum.mit.edu, 10/08/2014
 
 % Number of times the standard deviation for scale truncation
 nstats=[-3:3]; fax=3;
@@ -195,8 +195,11 @@ set(yl,'FontS',12)
 
 % Stick the params here somewhere so we can continue to judge
 movev(ah,-.1)
-t=ostitle(ah,params,name);
-movev(t,.4)
+% If params isn't a structure, we're not in the right mindset
+if isstruct(params)
+  t=ostitle(ah,params,name); movev(t,.4)
+end
+
 % We are quoting the TRUTHS and the THEORETICAL standard deviation with
 % which it can be known using the available data
 [answ,answs]=osansw(th0,truecov,E,v);

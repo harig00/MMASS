@@ -1,6 +1,6 @@
-function varargout=mleos(Hx,Gx,thini,params,algo,bounds)
+function varargout=mleos(Hx,Gx,thini,params,algo,bounds,aguess)
 % [thhat,logli,thini,scl,params,eflag,oput,grd,hes,Hk,k]=...
-%          MLEOS(Hx,Gx,thini,params,algo,bounds)
+%          MLEOS(Hx,Gx,thini,params,algo,bounds,aguess)
 %
 % Performs a maximum-likelihood estimation for UNCORRELATED loads as in
 % Olhede & Simons (2013) by minimization using FMINUNC/FMINCON.
@@ -24,6 +24,10 @@ function varargout=mleos(Hx,Gx,thini,params,algo,bounds)
 %          'con' uses FMINCON with positivity constraints [default]
 %          'klose' simply closes out a run that got stuck
 % bounds    A cell array with those positivity constraints [defaulted]
+% aguess    A parameter vector [s2 nu rho] that will be used in
+%           simulations for demo purposes, and on which "thini" will be
+%           based if that was left blank. If "aguess" is blank, there is
+%           a default. If "thini" is set, there is no need for "aguess"
 %
 % OUTPUT:
 %
@@ -49,9 +53,9 @@ function varargout=mleos(Hx,Gx,thini,params,algo,bounds)
 %
 % EXAMPLE:
 %
-%% Perform a series of N [defaulted, can be 0] simulations, here N=100
-% mleos('demo1',100)
-%% Statistical study of a series of simulations
+%% Perform a series of N simulations centered on th0
+% mleos('demo1',N,th0)
+%% Statistical study of a series of simulations done using 'demo1'
 % mleos('demo2','07-Jan-2013-blurs-2')
 %% Admittance/coherence study of a series of simulations
 % mleos('demo3','07-Jan-2013-blurs-2')
@@ -60,7 +64,7 @@ function varargout=mleos(Hx,Gx,thini,params,algo,bounds)
 %% One simulation and a chi-squared plot
 % mleos('demo5')
 %
-% Last modified by fjsimons-at-alum.mit.edu, 04/15/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/20/2014
 
 if ~isstr(Hx)
   defval('algo','con')
@@ -68,14 +72,14 @@ if ~isstr(Hx)
     % Parameters for FMINCON in case that's what's being used
     bounds={[],[],... % Linear inequalities
 	    [],[],... % Linear equalities
-	    [eps eps eps eps eps]*100,... % Lower bounds
-	    [Inf Inf Inf Inf Inf],... % Upper bounds
+	    [1e17 eps eps 0.95/100 1]*100,... % Lower bounds
+	    [Inf Inf Inf 4.00     Inf],... % Upper bounds
 	    []}; % Nonlinear (in)equalities
   else
     bounds=[];
   end
   % The necessary strings for formatting
-  str0='%15s';
+  str0='%27s';
   str1='%12.0e ';
   str2='%12.5g ';
   
@@ -91,34 +95,30 @@ if ~isstr(Hx)
   % Being extra careful or not?
   defval('xver',0)
   
-  % The random guesses for the parameters, see also SIMULOS
-  aguess=[1e24 0.8 0.0025 2 2e4];
-  %aguess=[7e22 0.4 0.0025 2 2e4];
- 
-  % The number of parameters to solve for
-  np=length(aguess);
-  % The number of unique entries in an np*np symmetric matrix
-  npp=np*(np+1)/2;
-  
-  % Perturb the guesses but keep them all positive if possible
-  nperturb=0.25;
-  % So not all the initialization points are the same!!
-  defval('thini',(1+nperturb*randn(size(aguess))).*aguess)
-    
-  % Scale the parameters by this factor; stick with it throughout
-  scl=10.^round(log10(abs(thini)));
-  thini=thini./scl;
+  % The parameters used in the simulation for demos, or upon which to base "thini"
+  defval('aguess',[1e24 0.8 0.0025 2 2e4]);
+  % Scale the parameters by this factor; fix it unless "thini" is supplied
+  defval('scl',10.^round(log10(abs(aguess))));
 
-  % Talk to me
-  disp(sprintf(sprintf('%s : %s ',str0,repmat(str1,size(scl))),...
-	       'Scaling',scl))
+  % Unless you supply an initial value, construct one from "aguess" by perturbation
+  nperturb=0.25;
+  defval('thini',abs((1+nperturb*randn(size(aguess))).*aguess))
   disp(sprintf(sprintf('%s : %s ',str0,repmat(str2,size(thini))),...
-	       'Starting theta',thini.*scl))
-  
+	       'Starting theta',thini))
+
+  % If you brought in your own initial guess, need an appropriate scale
+  if ~isempty(inputname(3))
+    scl=10.^round(log10(abs(thini)));
+    disp(sprintf(sprintf('%s : %s ',str0,repmat(str1,size(scl))),...
+		 'Scaling',scl))
+  end
+  % Now scale so the minimization doesn't get into trouble - bounds also!
+  thini=thini./scl;
+    
   defval('taper',0)
   if taper==1
     % Were going to want to make a 2D taper - any taper
-    disp('MLEOS with TAPERING, DO NOT DO THIS YET')
+    disp(sprintf('%s with TAPERING, DO NOT DO THIS YET',upper(mfilename)))
     NW=2;
     E1=dpss(NyNx(1),NW,1);
     E2=dpss(NyNx(2),NW,1);
@@ -134,6 +134,12 @@ if ~isstr(Hx)
 
   % Create the appropriate wavenumber axis
   k=knums(params);
+
+  % Modify to demean
+  disp('DEMEAN BOTH DATA SETS')
+  Hx(:,1)=Hx(:,1)-mean(Hx(:,1));
+  Gx=Gx-mean(Gx);
+  % Let us NOT demean and see where we end up...
 
   % Turn the observation vector to the spectral domain
   Hk(:,1)=tospec(Tx(:).*Hx(:,1),NyNx);
@@ -155,7 +161,7 @@ if ~isstr(Hx)
   % [ off | iter | iter-detailed | notify | notify-detailed | final |
   % final-detailed ] 
   % Should probably make the tolerances relative to the number of k points
-  options=optimset('GradObj','off','Display','iter-detailed',...
+  options=optimset('GradObj','off','Display','final',...
 		   'TolFun',1e-11,'TolX',1e-11,'MaxIter',NN,...
 		   'LargeScale','off');
   % The 'LargeScale' option goes straight for the line search when the
@@ -165,7 +171,7 @@ if ~isstr(Hx)
   % Doesn't seem to do much when we supply our own gradient
   options.UseParallel='always';
 
-  if blurs==0
+  if blurs==0 || blurs==1
     % Use the analytical gradient in the optimization, rarely a good idea
     % options.GradObj='on';
     if xver==1
@@ -178,7 +184,7 @@ if ~isstr(Hx)
   try
     switch algo
      case 'unc'
-      disp('Using FMINUNC for unconstrained optimization of LOGLIOS')
+      % disp('Using FMINUNC for unconstrained optimization of LOGLIOS')
       t0=clock;
       [thhat,logli,eflag,oput,grd,hes]=...
 	  fminunc(@(theta) loglios(theta,params,Hk,k,scl),...
@@ -188,12 +194,12 @@ if ~isstr(Hx)
      case 'con'
       % New for FMINCON
       options.Algorithm='active-set';
-      disp('Using FMINCON for constrained optimization of LOGLIOS')
+      % disp('Using FMINCON for constrained optimization of LOGLIOS')
       t0=clock;
       [thhat,logli,eflag,oput,lmd,grd,hes]=...
 	  fmincon(@(theta) loglios(theta,params,Hk,k,scl),...
 		  thini,...
-		  bounds{1},bounds{2},bounds{3},bounds{4},bounds{5},bounds{6},bounds{7},...
+		  bounds{1},bounds{2},bounds{3},bounds{4},bounds{5}./scl,bounds{6}./scl,bounds{7},...
 		  options);
       ts=etime(clock,t0);
      case 'klose'
@@ -203,8 +209,12 @@ if ~isstr(Hx)
        varargout{end}=bounds;
        return
     end
-    disp(sprintf('%8.3gs per %i iterations or %8.3gs per %i function counts',...
-	 ts/oput.iterations*100,100,ts/oput.funcCount*1000,1000))
+    if xver==1
+      disp(sprintf('%8.3gs per %i iterations or %8.3gs per %i function counts',...
+		   ts/oput.iterations*100,100,ts/oput.funcCount*1000,1000))
+    else
+      disp(sprintf('\n'))
+    end
   catch
     varargout=cellnan(nargout,1,1);
     return
@@ -228,15 +238,19 @@ elseif strcmp(Hx,'demo1')
   % THHAT but you will start with a blank THZERO. See 'demo2'
   % How many simulations: the second argument after the demo id
   defval('Gx',[]);
-  N=Gx;
+  N=Gx; clear Gx
   defval('N',500)
-  more off
+  % What th-parameter set? The SECOND argument after the demo id
+  defval('thini',[]);
+  % If there is no preference, then that's OK, it gets taken care of
+  th0=thini; clear thini
+  % What fixed-parameter set? The THIRD argument after the demo id
+  defval('params',[]);
 
   % The number of parameters to solve for
   np=5;
   % The number of unique entries in an np*np symmetric matrix
   npp=np*(np+1)/2;
-  
   % Open files and return format strings
   [fid0,fid1,fid2,fid3,fmt1,fmt2,fmt3,fmtf,fmte,fmtd,fmtc]=...
       osopen(np,npp);
@@ -249,13 +263,13 @@ elseif strcmp(Hx,'demo1')
   % Set N to zero to simply close THZERO out
   for index=1:N
     % Simulate data from the same lithosphere, watch the blurring
-    [Hx,Gx,th0,p,k]=simulos([],[]);
+    [Hx,Gx,th0,p,k]=simulos(th0,params);
     % Check the dimensions of space and spectrum are right
     difer(length(Hx)-length(k(:)),[],[],NaN)
 
     % Form the maximum-likelihood estimate
     t0=clock;
-    [thhat,logli,thini,scl,p,e,o,gr,hs,~,~,ops,bnds]=mleos(Hx,Gx,[],[]);
+    [thhat,logli,thini,scl,p,e,o,gr,hs,~,~,ops,bnds]=mleos(Hx,Gx,[],p,[],[],th0);
     ts=etime(clock,t0);
 
     % Initialize the THZRO file
@@ -268,7 +282,7 @@ elseif strcmp(Hx,'demo1')
     % e=1
 
     % IF NUMBER OF FUNCTION ITERATIONS IS TOO LOW DEFINITELY BAD
-    itmin=10;
+    itmin=0;
 
     % A measure of first-order optimality (which in this
     % unconstrained case is the infinity norm of the gradient at the
@@ -276,7 +290,7 @@ elseif strcmp(Hx,'demo1')
     % FJS to update what it means to be good - should be in function of
     % the data size as more precision will be needed to navigate things
     % with smaller variance! At any rate, you want this not too low.
-    optmin=1e-3;
+    optmin=Inf;
     % Maybe just print it and decide later? No longer e>0 as a condition.
     % e in many times is 0 even though the solution was clearly found, in
     % other words, this condition IS a way of stopping with the solution
@@ -299,7 +313,7 @@ elseif strcmp(Hx,'demo1')
 	  
 	  % Print the optimization diagnostics to a different file	
 	  % Save the VARIANCE of the spatial field(s) which will be a
-	  % (poor) estimate of the s2 parameter of in the single-variable
+	  % (poor) estimate of the s2 parameter in the single-variable
 	  % case, but noting that s2 is the variance of the initial loads
 	  % and thus the sample variances of the final topography and the
 	  % gravity aren't going to be close, nor will their ratio. 
@@ -313,7 +327,7 @@ elseif strcmp(Hx,'demo1')
   
   % Initialize if all you want is to close the file
   if N==0; 
-    [Hx,Gx,th0,p,k]=simulos([],[]); 
+    [Hx,Gx,th0,p,k]=simulos(th0,params); 
     good=1; avhs=avhs+1; 
     [~,~,~,~,pp,~,~,~,~,~,~,ops,bnds]=mleos(Hx,Gx,[],[],'klose');
     oswzerob(fid0,th0,p,ops,bnds,fmt1,fmt2)
@@ -354,7 +368,12 @@ elseif strcmp(Hx,'demo2')
 
   % Load everything you know about this simulation
   [th0,thhats,params,truecov,E,v]=osload(datum);
-  
+
+    % Restructurize for the title string
+  fields={'DEL','g','z2','dydx','NyNx','blurs','kiso'};
+  valjus={[params(1:2)] params(3) params(4) [params(5:6)] params(7:8) params(9) params(10)};
+  p=cell2struct(valjus,fields,2);
+
   % Plot it all - perhaps some selection on optis?
   [ah,ha]=mleplos(thhats,th0,truecov,E,v,params,sprintf('MLEOS-%s',datum));
   
@@ -402,14 +421,20 @@ elseif strcmp(Hx,'demo4')
 
   % Make the plot
   figna=figdisp([],sprintf('%s_%s',Hx,datum),[],1);
+  system(sprintf('degs %s.eps',figna));
   system(sprintf('epstopdf %s.eps',figna)); 
+  system(sprintf('rm -f %s.eps',figna)); 
 elseif strcmp(Hx,'demo5')  
-  % Truth and params... defaulted inside SIMULOS for now
-  [th0,params]=deal([]);
-  % Note that 0 and 1 amount to no blurring whatsoever
-  % Any extras need to appear in the order that you expect them
-  params.NyNx=[64 64];
-  params.blurs=2;
+  % What th-parameter set? The SECOND argument after the demo id
+  defval('thini',[]);
+  % If there is no preference, then that's OK, it gets taken care of
+  th0=thini; clear thini
+  % What fixed-parameter set? The THIRD argument after the demo id
+  defval('params',[]);
+  
+  % Figure name
+  figna=sprintf('%s_%s_%s',mfilename,Hx,date);
+
   % Simulate data, watch the blurring, verify COLCHECK inside
   xver=1;
   [Hx,Gx,th0,p,k,Hk]=simulos(th0,params,xver);
@@ -468,6 +493,14 @@ elseif strcmp(Hx,'demo5')
   % Quick plot, but see OLHEDESIMONS5
   clf
   ah=krijetem(subnum(2,3)); delete(ah(4:6)); ah=ah(1:3);
+
+  % Maybe we should show different covariances than the predicted ones??
   mlechiplos(1,Hk,thhat,scl,p,ah,0,th0,covth,E,v);
+
+  % Print to file
+  figna=figdisp([],sprintf('%s','demo7_2'),[],1);
+  system(sprintf('degs %s.eps',figna));
+  system(sprintf('epstopdf %s.eps',figna)); 
+  system(sprintf('rm -f %s.eps',figna)); 
 end
 

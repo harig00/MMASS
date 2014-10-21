@@ -7,7 +7,7 @@ function Lk=Lkos(k,th,params,Hk)
 % INPUT:
 %
 % k        Wavenumber(s) at which this is to be evaluated [1/m]
-% th       The parameter vector with elements:
+% th       The parameter vector with elements [unscaled]:
 %          D   Isotropic flexural rigidity [Nm]
 %          f2  The sub-surface to surface initial loading ratio
 %          s2  The first Matern parameter, aka sigma^2
@@ -30,7 +30,7 @@ function Lk=Lkos(k,th,params,Hk)
 %
 % LOGLIOS
 %
-% Last modified by fjsimons-at-alum.mit.edu, 04/15/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/13/2014
 
 % Extract the needed parameters of the simulation variables
 blurs=params.blurs;
@@ -38,7 +38,7 @@ blurs=params.blurs;
 switch blurs
  case {0,1}
   % That's lots of screen time, FMINUNC evaluates this a lot
-  % disp('LKOS without BLURRING')
+  % disp(sprintf('%s without blurring',upper(mfilename)))
   % First calculate the Matern spectrum with the spectral parameters
   S11=maternos(k,th);
 
@@ -66,7 +66,7 @@ switch blurs
   warning on MATLAB:log:logOfZero
  otherwise
   % That's lots of screen time, FMINUNC evaluates this a lot
-  % disp('LKOS with BLURRING')
+  % disp(sprintf('%s with blurring factor %i',upper(mfilename),blurs))
   % Extract the needed parameters of the simulation variables
   NyNx=params.NyNx;
   % Blurs IS the refinement parameter; make new wavenumber grid

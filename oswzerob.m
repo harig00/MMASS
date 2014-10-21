@@ -16,7 +16,7 @@ function oswzerob(fid,th0,params,options,bounds,fmt1,fmt2)
 %
 % OSWZEROE, OSRZERO
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/08/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/20/2014
 
 % Commit the truth to file
 fprintf(fid,'%s\n','the true parameter vector');
@@ -24,7 +24,12 @@ fprintf(fid,fmt1,th0);
 
 % Commit the parameters of the experiment to file
 fprintf(fid,'%s\n','the fixed experimental parameters');
-fprintf(fid,fmt2,struct2array(params));
+%fprintf(fid,fmt2,struct2array(params));
+% Rather, these need to be ordered to yield to the format
+fulls={'DEL','g','z2','dydx','NyNx','blurs','kiso'};
+[~,i]=ismember(fulls,fieldnames(params));
+jk=struct2cell(params);
+fprintf(fid,fmt2,[jk{i(~~i)}]);
 
 % Convert the bounds to something printable
 fprintf(fid,'%s\n','the bounds, if any');
