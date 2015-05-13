@@ -102,5 +102,5 @@ set([xl al],'FontS',13)
 set([ ah],'FontS',12)
 
 fig2print(gcf,'portrait')
-keyboard
+
 figdisp([],[],[],1)

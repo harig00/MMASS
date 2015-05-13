@@ -32,9 +32,9 @@ function mcF=Fisherkos(k,th,params,xver)
 % [~,~,th0,p,k]=simulos([],[],[],1);
 % mcF=Fisherkos(k,th0,p,1);
 %
-% Last modified by fjsimons-at-alum.mit.edu, 02/10/2011
+% Last modified by fjsimons-at-alum.mit.edu, 10/25/2014
 
-defval('xver',0)
+defval('xver',1)
 
 % Extract the parameters from the input
 D=th(1);

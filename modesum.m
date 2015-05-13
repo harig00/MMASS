@@ -1,7 +1,8 @@
 function fl=modesum(nfl,nn,el)
 % fl=MODESUM(nfl,nn,el)
 %
-% Performs normal-mode summation efficiently.
+% Performs normal-mode summation efficiently, i.e. given 
+% f_{nl}, computes sum_{n} f_{nl}
 %
 % INPUT:
 %

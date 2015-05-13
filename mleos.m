@@ -1,5 +1,5 @@
 function varargout=mleos(Hx,Gx,thini,params,algo,bounds,aguess)
-% [thhat,logli,thini,scl,params,eflag,oput,grd,hes,Hk,k]=...
+% [thhat,covh,logli,thini,scl,params,eflag,oput,grd,hes,Hk,k,options,bounds]=...
 %          MLEOS(Hx,Gx,thini,params,algo,bounds,aguess)
 %
 % Performs a maximum-likelihood estimation for UNCORRELATED loads as in
@@ -31,16 +31,17 @@ function varargout=mleos(Hx,Gx,thini,params,algo,bounds,aguess)
 %
 % OUTPUT:
 %
-% thhat    The maximum-likelihood estimate of the vector with elements:
+% thhat    The maximum-likelihood estimate of the vector [scaled]:
 %          [D f2 s2 nu rho], in Nm, and "nothing", see SIMULOS
+% covh     The asymptotic covariance matrix of this estimate
 % logli    The maximized value of the likelihood
 % thini    The starting guess used in the optimization
 % scl      The scaling applied as part of the optimization procedure
 % params   The known constants used inside, see above
 % eflag    The exit flag of the optimization procedure [bad if 0]
 % oput     The output structure of the optimization procedure
-% grd      The gradient at the estimate
-% hes      The Hessian at the estimate
+% grd      The gradient of the misfit function at the estimate
+% hes      The Hessian of the misfit function at the estimate
 % Hk       The spectral-domain interface topographies after deconvolution 
 % k        The wavenumbers on which the estimate is actually based
 % options  The options used by the optimization procedure
@@ -64,7 +65,7 @@ function varargout=mleos(Hx,Gx,thini,params,algo,bounds,aguess)
 %% One simulation and a chi-squared plot
 % mleos('demo5')
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/20/2014
+% Last modified by fjsimons-at-alum.mit.edu, 02/13/2015
 
 if ~isstr(Hx)
   defval('algo','con')
@@ -107,7 +108,7 @@ if ~isstr(Hx)
 	       'Starting theta',thini))
 
   % If you brought in your own initial guess, need an appropriate scale
-  if ~isempty(inputname(3))
+  if ~isempty(inputname(3)) || any(aguess~=thini)
     scl=10.^round(log10(abs(thini)));
     disp(sprintf(sprintf('%s : %s ',str0,repmat(str1,size(scl))),...
 		 'Scaling',scl))
@@ -142,8 +143,8 @@ if ~isstr(Hx)
   % Let us NOT demean and see where we end up...
 
   % Turn the observation vector to the spectral domain
-  Hk(:,1)=tospec(Tx(:).*Hx(:,1),NyNx);
-  Gk     =tospec(Tx(:).*Gx     ,NyNx);
+  Hk(:,1)=tospec(Tx(:).*Hx(:,1),params);
+  Gk     =tospec(Tx(:).*Gx     ,params);
   Hk(:,2)=Gk.*exp(k(:).*z2)/2/pi/G/DEL(2);
 
   if xver==1
@@ -151,7 +152,7 @@ if ~isstr(Hx)
     % while we could fake it in the simulations by working with Hx. Check
     % quickly, and note that there are roundoff errors right away!
     % Is the normalization right? I recently absorbed this into TOSPEC.
-    difer([tospec(Tx(:).*Hx(:,2),NyNx)-Hk(:,2)]/length(Hk),8,[],NaN)
+    difer([tospec(Tx(:).*Hx(:,2),p)-Hk(:,2)]/length(Hk),8,[],NaN)
     % Should also compare this with what actually can come out of SIMULOS
     % itself, although with real data of course we don't have this.
   end
@@ -199,7 +200,8 @@ if ~isstr(Hx)
       [thhat,logli,eflag,oput,lmd,grd,hes]=...
 	  fmincon(@(theta) loglios(theta,params,Hk,k,scl),...
 		  thini,...
-		  bounds{1},bounds{2},bounds{3},bounds{4},bounds{5}./scl,bounds{6}./scl,bounds{7},...
+		  bounds{1},bounds{2},bounds{3},...
+                  bounds{4},bounds{5}./scl,bounds{6}./scl,bounds{7},...
 		  options);
       ts=etime(clock,t0);
      case 'klose'
@@ -216,22 +218,22 @@ if ~isstr(Hx)
       disp(sprintf('\n'))
     end
   catch
+    % If something went wrong, exit gracefully
     varargout=cellnan(nargout,1,1);
     return
   end
   
-  % When you're done could compare grd and hes with our own ?
-    
-  % Now if this was a single estimate that we are making we'd use COVTHOS
-  % here to compute its covariance matrix. In 'demo1' we make sure that
-  % this makes sense. How about using the straight Hessian?
-  
+  % This is the entire-plane estimate (hence the factor 2!)
+  covh=hes2cov(hes,scl,length(k(~~k))*2);
+
   % Talk!
-  disp(sprintf(sprintf('%s : %s ',str0,repmat(str2,size(thhat))),...
+  disp(sprintf(sprintf('\n%s : %s ',str0,repmat(str2,size(thhat))),...
 	       'Estimated theta',thhat.*scl))
+  disp(sprintf(sprintf('%s : %s ',str0,repmat(str2,size(thhat))),...
+	       'Asymptotic stds',thhat.*scl))
 
   % Generate output as needed
-  varns={thhat,logli,thini,scl,params,eflag,oput,grd,hes,Hk,k,options,bounds};
+  varns={thhat,covh,logli,thini,scl,params,eflag,oput,grd,hes,Hk,k,options,bounds};
   varargout=varns(1:nargout);
 elseif strcmp(Hx,'demo1')
   % If you run this again on the same date, we'll just add to THINI and
@@ -249,16 +251,15 @@ elseif strcmp(Hx,'demo1')
 
   % The number of parameters to solve for
   np=5;
-  % The number of unique entries in an np*np symmetric matrix
-  npp=np*(np+1)/2;
+
   % Open files and return format strings
   [fid0,fid1,fid2,fid3,fmt1,fmt2,fmt3,fmtf,fmte,fmtd,fmtc]=...
-      osopen(np,npp);
+      osopen(np);
  
   % Do it!
   good=0; 
   % Initialize the average Hessian
-  avhs=zeros(np,np);
+  avH=zeros(np,np);
 
   % Set N to zero to simply close THZERO out
   for index=1:N
@@ -269,7 +270,8 @@ elseif strcmp(Hx,'demo1')
 
     % Form the maximum-likelihood estimate
     t0=clock;
-    [thhat,logli,thini,scl,p,e,o,gr,hs,~,~,ops,bnds]=mleos(Hx,Gx,[],p,[],[],th0);
+    [thhat,covh,logli,thini,scl,p,e,o,gr,hs,~,~,ops,bnds]=...
+	mleos(Hx,Gx,[],p,[],[],th0);
     ts=etime(clock,t0);
 
     % Initialize the THZRO file
@@ -306,19 +308,16 @@ elseif strcmp(Hx,'demo1')
 	      && o.firstorderopt < optmin
 	  good=good+1;
 	  % Build the average of the Hessians for printout later
-	  avhs=avhs+hs;
+	  avH=avH+hs.*[scl(:)*scl(:)'];
 	  % Reapply the scaling before writing it out
 	  fprintf(fid1,fmt1,thhat.*scl);
 	  fprintf(fid2,fmt1,thini.*scl);
+	  % Here we compute and write out the moments of the Xk
+	  [L,~,momx]=logliosl(thhat,p,Hk,k,scl);
 	  
 	  % Print the optimization diagnostics to a different file	
-	  % Save the VARIANCE of the spatial field(s) which will be a
-	  % (poor) estimate of the s2 parameter in the single-variable
-	  % case, but noting that s2 is the variance of the initial loads
-	  % and thus the sample variances of the final topography and the
-	  % gravity aren't going to be close, nor will their ratio. 
 	  oswdiag(fid3,fmt1,fmt3,logli,gr,hs,thhat,thini,scl,ts,e,o,....
-		  var(Hx)*(2*pi)^2/prod(p.dydx))
+		  var(Hx),momx,covh)
 	end
     end
   end
@@ -328,30 +327,26 @@ elseif strcmp(Hx,'demo1')
   % Initialize if all you want is to close the file
   if N==0; 
     [Hx,Gx,th0,p,k]=simulos(th0,params); 
-    good=1; avhs=avhs+1; 
-    [~,~,~,~,pp,~,~,~,~,~,~,ops,bnds]=mleos(Hx,Gx,[],[],'klose');
+    good=1; avH=avH+1; 
+    [~,~,~,~,~,pp,~,~,~,~,~,~,ops,bnds]=mleos(Hx,Gx,[],[],'klose');
     oswzerob(fid0,th0,p,ops,bnds,fmt1,fmt2)
   end
   
   if good>=1
-    % This is the average of the Hessians, should be close to the Fisher
-    avlin=tril(avhs/good); avlin=avlin(~~avlin)';
-    
-    % Now compute the theoretical covariance and scaled Fisher
-    % This we don't really need any other time, it's just for us to be
-    % able to compare to the average of the Hessians in this simulation
+    % This is the scaling based on the truth which we use here 
     sclth0=10.^round(log10(th0));
-    try
-      [covth,covlin,Fisher,Flin]=covthos(th0./sclth0,p,k,sclth0);
-    catch
-      % Could be that just the LAST one ended in a NaN altogether, then
-      % this would fail. You could just do zero or one more in that case.
-    end
-    
+
+    % This is the average of the Hessians, should be close to the Fisher
+    avH=avH./[sclth0(:)*sclth0(:)']/good;
+
+    % Now compute the theoretical covariance and scaled Fisher
+    [covF,F]=covthos(th0./sclth0,p,k,sclth0);
     % Of course when we don't have the truth we'll build the covariance
     % from the single estimate that we have just obtained. This
     % covariance would then be the only thing we'd have to save.
-    oswzeroe(fid0,sclth0,avlin,good,Flin,covlin,fmtc,fmte,fmtf)
+    if labindex==1
+      oswzeroe(fid0,sclth0,avH,good,F,covF,fmtc,fmte,fmtf)
+    end
   end
   
   % Put both of these also into the thzro file 
@@ -363,16 +358,13 @@ elseif strcmp(Hx,'demo2')
 
   % The number of parameters to solve for
   np=5;
-  % The number of unique entries in an np*np symmetric matrix
-  npp=np*(np+1)/2;
 
   % Load everything you know about this simulation
-  [th0,thhats,params,truecov,E,v]=osload(datum);
+  [th0,thhats,params,truecov,E,v,~,~,momx]=osload(datum);
 
-    % Restructurize for the title string
-  fields={'DEL','g','z2','dydx','NyNx','blurs','kiso'};
-  valjus={[params(1:2)] params(3) params(4) [params(5:6)] params(7:8) params(9) params(10)};
-  p=cell2struct(valjus,fields,2);
+  % Report the findings of the moment parameters
+  disp(sprintf('m(m(Xk)) %f m(v(Xk)) %f m(magic) %s v(magic) %f',...
+	      mean(momx),var(momx(:,end))))
 
   % Plot it all - perhaps some selection on optis?
   [ah,ha]=mleplos(thhats,th0,truecov,E,v,params,sprintf('MLEOS-%s',datum));
@@ -389,8 +381,6 @@ elseif strcmp(Hx,'demo3')
 
   % The number of parameters to solve for
   np=5;
-  % The number of unique entries in an np*np symmetric matrix
-  npp=np*(np+1)/2;
 
   % Load everything you know about this simulation
   [th0,thhats,params,truecov,E,v]=osload(datum);
@@ -410,8 +400,6 @@ elseif strcmp(Hx,'demo4')
   
   % The number of parameters to solve for
   np=5;
-  % The number of unique entries in an np*np symmetric matrix
-  npp=np*(np+1)/2;
 
   % Load everything you know about this simulation
   [th0,thhats,params,truecov,E,v,obscov,sclcov]=osload(datum);
@@ -426,11 +414,12 @@ elseif strcmp(Hx,'demo4')
   system(sprintf('rm -f %s.eps',figna)); 
 elseif strcmp(Hx,'demo5')  
   % What th-parameter set? The SECOND argument after the demo id
-  defval('thini',[]);
+  defval('Gx',[]);
   % If there is no preference, then that's OK, it gets taken care of
-  th0=thini; clear thini
+  th0=Gx; clear Gx
   % What fixed-parameter set? The THIRD argument after the demo id
-  defval('params',[]);
+  defval('thini',[]);
+  params=thini; clear thini
   
   % Figure name
   figna=sprintf('%s_%s_%s',mfilename,Hx,date);
@@ -443,7 +432,7 @@ elseif strcmp(Hx,'demo5')
   thini=[];
 
   % Perform the optimization, whatever the quality of the result
-  [thhat,logli,thini,scl,p,e,o,gr,hs]=mleos(Hx,Gx,thini,p);
+  [thhat,~,logli,thini,scl,p,e,o,gr,hs]=mleos(Hx,Gx,thini,p);
   % Maybe here could test using  the "wrong" code, MLEROS or MLEROS0
 
   % Take a look at the unblurred gradient purely for fun, they should be
@@ -453,7 +442,7 @@ elseif strcmp(Hx,'demo5')
   % Take a look at the unblurred theoretical covariance at the estimate,
   % to compare to the observed blurred Hessian; in the other demos we
   % compare how well this works after averaging
-  [covthat,~,F]=covthos(thhat,p,k,scl);
+  [covthat,F]=covthos(thhat,p,k,scl);
 
   % Collect the theoretical covariance for the truth for the title
   covth=covthos(th0./scl,p,k,scl);
@@ -461,6 +450,7 @@ elseif strcmp(Hx,'demo5')
   % Take a look at the scaled Fisher to compare with the scaled Hessian  
   F;
   hs;
+  grobs;
  
   % Take a look at the scaled covariances
   predcov=covthat./[scl(:)*scl(:)'];
@@ -495,6 +485,11 @@ elseif strcmp(Hx,'demo5')
   ah=krijetem(subnum(2,3)); delete(ah(4:6)); ah=ah(1:3);
 
   % Maybe we should show different covariances than the predicted ones??
+
+  % Time to rerun LOGLIOS one last time at the solution
+  [L,~,momx]=loglios(thhat,p,Hk,k,scl);
+
+  % Better feed this to the next code, now it's redone inside
   mlechiplos(1,Hk,thhat,scl,p,ah,0,th0,covth,E,v);
 
   % Print to file

@@ -240,14 +240,7 @@ if ~isstr(Lmax)
       fnpl='neveravailable';
     else
       % Regular Gauss-Legendre method here (not alternative)  
-        
-      % See if we can run this calculation in parallel, and set a flag
-      try
-         matlabpool open
-      catch
-        error('Run KERNELC instead or close your open pool')
-      end
-      
+
       % Calculating different Gauss-Legendre points for all possible product
       % degrees is not a good idea since they get multiplied by more
       % functions of theta 
@@ -383,9 +376,6 @@ if ~isstr(Lmax)
         Klmlmp(lm1dex,:)=temprow;
       end %parfor
     
-      % Close the matlabpool
-      matlabpool close
-      
       % Symmetrize the Kernel
       Klmlmp = Klmlmp + Klmlmp' - eye(size(Klmlmp)).*Klmlmp;
 	

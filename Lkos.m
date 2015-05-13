@@ -1,5 +1,5 @@
-function Lk=Lkos(k,th,params,Hk)
-% Lk=Lkos(k,th,params,Hk)
+function [Lk,Xk]=Lkos(k,th,params,Hk)
+% [Lk,Xk]=Lkos(k,th,params,Hk)
 %
 % Computes the likelihood function for the isotropic Forsyth model in
 % Olhede & Simons (2013) under UNCORRELATED loading
@@ -25,12 +25,13 @@ function Lk=Lkos(k,th,params,Hk)
 % OUTPUT:
 %
 % Lk       A one-column vector with the wavenumbers unwrapped
+% Xk       A quadratic piece of it that gets used in the analysis of residuals
 %
 % SEE ALSO: 
 %
 % LOGLIOS
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/13/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/22/2014
 
 % Extract the needed parameters of the simulation variables
 blurs=params.blurs;
@@ -42,33 +43,21 @@ switch blurs
   % First calculate the Matern spectrum with the spectral parameters
   S11=maternos(k,th);
 
-  % Extract the needed parameters of the estimation variables
-  D=th(1);
-  % Extract the needed parameters of the simulation variables
-  DEL=params.DEL;
-  g=params.g;
-  
-  % First the auxiliary quantities
-  phi=phios(k,D,DEL,g);
-  xi =xios(k,D,DEL,g);
-  % Note that this has a zero at zero wavenumber
-  pxm=(phi.*xi-1);
-
   % Then calculate then T matrices with the lithospheric parameters, and yes
   % we know Tinv will have an Inf and detT a 0 at k=0, but HFORMOS will
   % turn the Inf into a NaN and log(0)+NaN remains NaN, ...
-  [invT,detT]=Tos(k,th,params,phi,xi,pxm);
+  [invT,detT]=Tos(k,th);
   
   % Then put it all together... and all we have to worry about is a NaN in
   % Lk which we take care of in LOGLIOS. Note that Lk should be real. 
   warning off MATLAB:log:logOfZero
-  Lk=-2*log(S11)-log(detT)-hformos(S11,invT,Hk);
+  Xk=hformos(S11,invT,Hk);;
+  Lk=-2*log(S11)-log(detT)-Xk;
   warning on MATLAB:log:logOfZero
  otherwise
   % That's lots of screen time, FMINUNC evaluates this a lot
   % disp(sprintf('%s with blurring factor %i',upper(mfilename),blurs))
-  % Extract the needed parameters of the simulation variables
-  NyNx=params.NyNx;
+
   % Blurs IS the refinement parameter; make new wavenumber grid
   [k2,kzero]=knums(params,1);
   
@@ -81,7 +70,7 @@ switch blurs
     
   % Which we need to convolve now in two dimensions
   % And then do subsampling onto the original target grid
-  Sb=bluros(S,NyNx,blurs,1);
+  Sb=bluros(S,params,1);
   
   % Now we need the determinant of the blurred S and its inverse
   detS=[Sb(:,1).*Sb(:,3)-Sb(:,2).^2];
@@ -94,7 +83,8 @@ switch blurs
   
   % Then put it all together...
   warning off MATLAB:log:logOfZero
-  Lk=-log(detS)-hformos(1,invS,Hk);
+  Xk=hformos(1,invS,Hk);
+  Lk=-log(detS)-Xk;
   warning on MATLAB:log:logOfZero
   
   % Behavior is rather different if this is NOT done... knowing that it

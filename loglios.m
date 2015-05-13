@@ -1,5 +1,5 @@
-function [L,gam]=loglios(th,params,Hk,k,scl)
-% [L,gam]=LOGLIOS(th,params,Hk,k,scl)
+function [L,gam,momx]=loglios(th,params,Hk,k,scl)
+% [L,gam,momx]=LOGLIOS(th,params,Hk,k,scl)
 %
 % Calculates the full negative logarithmic likelihood and its
 % derivatives, i.e. minus LKOS and minus GAMMAKOS averaged over
@@ -22,6 +22,7 @@ function [L,gam]=loglios(th,params,Hk,k,scl)
 % Hk       A [prod(params.NyNx)*2]-column vector of complex Fourier-domain observations
 % k        the wavenumbers at which these are being evaluated [1/m]
 % scl      The vector with any scalings applied to the parameter vector
+% momx     Moments of the quadratic piece Xk over all relevant wavenumbers
 %
 % OUTPUT:
 %
@@ -32,7 +33,7 @@ function [L,gam]=loglios(th,params,Hk,k,scl)
 %
 % FISHERKOS, which should be incorporated at a later stage
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/20/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/22/2014
 
 % Default scaling is none
 defval('scl',ones(size(th)))
@@ -47,18 +48,30 @@ th=th.*scl;
 th([1 2 3 4 5])=abs(th([1 2 3 4 5]));
 
 % Filter, perhaps
-sjit=Lkos(k,th,params,Hk);
+[Lk,Xk]=Lkos(k,th,params,Hk);
 if any(~isnan(params.kiso))
-  sjit(k>params.kiso)=NaN;
+  Lk(k>params.kiso)=NaN;
+  Xk(k>params.kiso)=NaN;
 end
 
 % Note: should we restrict this to the upper halfplane? or will mean do
 % Get the likelihood at the individual wavenumbers; average
-L=-nanmean(sjit);
+L=-nanmean(Lk);
 if isnan(L)
   % Attempt to reset
   L=1e100;
 end
+
+if nargout==3
+  % Extract the moments we'll be needing for evaluation later
+  df=2;
+  % First should be close to df/2, second close to df/2, third is like
+  % the second except formally from a distribution that should be normal
+  % with mean df/2 and variance blabla/K; the last parameter is "magic"
+  momx=[nanmean(Xk) nanvar(Xk) nanmean([Xk-df/2].^2)];
+end
+
+% I say, time to extract heskosl and hes here also?
   
 % Get the scores at the individual wavenumbers; average
 switch params.blurs

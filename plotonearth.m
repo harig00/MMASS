@@ -9,9 +9,13 @@ function varargout=plotonearth(data,conts,lon,lat)
 % Without relief but with optional continents, and with
 % the possibility of an absolute coordinate frame. 
 %
+% OUTPUT:
+%
+% pc         The handle to the continents plotted
+%
 % See also PLOTONSPHERE, PLOTPLM
 %
-% Last modified by fjsimons-at-alum.mit.edu, June 26th, 2003
+% Last modified by fjsimons-at-alum.mit.edu, 03/13/2015
 
 defval('conts',1)
 defval('lon',[])
@@ -31,8 +35,8 @@ if conts==1
   latc=cont(:,2)/180*pi;
   rad=repmat(1.001,size(latc));
   [xx,yy,zz]=sph2cart(lonc,latc,rad);
-  pc=plot3(xx,yy,zz,'k-','LineWidth',1.5);
   hold on
+  pc=plot3(xx,yy,zz,'k-','LineWidth',1.5);
 end
 
 if isempty(lon)

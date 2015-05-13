@@ -127,16 +127,17 @@ miniK = w(:)'*(Xlm(:,bigo).*I);
 miniK=miniK/4/pi;
 
 % Compare with KERNELC
-%if xver==1
-  %KK=rindeks(kernelc(Lmax,dom),1);
-%end
+defval('xver',0)
+if xver==1
+  KK=rindeks(kernelc(Lmax,dom),1);
+end
      
 % This then makes miniK(1) the fractional area on the sphere
 % Check by comparing to output from spharea, if you want
 % Note: SPHAREA defaults to 17 abcissas and weights, while this code uses 101.
 % So differences to be expected when continents are squiggly.
 % Check the first term which should equal the area on the unit sphere
-%A1=spharea(XY); A2=areaint(XY(:,2),XY(:,1));
+% A1=spharea(XY); A2=areaint(XY(:,2),XY(:,1));
 %disp(sprintf('Area check...  PLM2AVG A: %6.7f ; SPHAREA A: %6.7f ; AREAINT A: %6.7f',...
 %	miniK(1),A1,A2))
 

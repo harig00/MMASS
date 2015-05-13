@@ -22,8 +22,8 @@ function XY=regselect(regn,c11,cmn,xunt,res,buf,ofs)
 %
 % XY       The requested coordinates
 % 
-% Last modified by charig-at-princeton.edu, 05/03/2013
-% Last modified by fjsimons-at-alum.mit.edu, 09/23/2014
+% Last modified by charig-at-princeton.edu, 10/23/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/23/2014
 
 % The directory where you keep the coordinates
 whereitsat=fullfile(getenv('IFILES'),'COASTS');
@@ -49,7 +49,7 @@ elseif buf~=0
 end
 
 % If you already have a file
-if exist(fnpl,'file')==3
+if exist(fnpl,'file')==2
   load(fnpl)
 else
   % You are about to make a file

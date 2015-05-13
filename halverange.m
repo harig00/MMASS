@@ -10,6 +10,10 @@ function cols=halverange(data,fax,fidi)
 % fax        50, for 50% [default]
 % fidi       NaN do not display the message
 %
+% OUTPUT:
+%
+% cols       The color range
+%
 % Last modified by fjsimons-at-alum.mit.edu, 3/15/2011
 
 defval('fax',50)

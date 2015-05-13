@@ -47,3 +47,4 @@ end
 avark=4*nu/pi^2/rho^2+k(:).^2;
 % Calculate the d-dimensional spectral density
 Sk=s2*pd*nu^nu*4^nu/pi^(d/2)/(pi*rho)^(2*nu).*avark.^(-nu-d/2);
+

@@ -1,5 +1,5 @@
-function varargout=mleplos(thhats,th0,truecov,E,v,params,name)
-% MLEPLOS(thhats,th0,truecov,E,v,params,name)
+function varargout=mleplos(thhats,th0,covF,covHav,E,v,params,name)
+% MLEPLOS(thhats,th0,covF,covHav,E,v,params,name)
 %
 % Graphical statistical evaluation of the maximum-likelihood inversion
 % results from MLEOS, MLEROS, MLEROS0, MLEOSL. 
@@ -14,7 +14,8 @@ function varargout=mleplos(thhats,th0,truecov,E,v,params,name)
 %            th0(3/4)=s2   The first Matern parameter, aka sigma^2 
 %            th0(4/5)=nu   The second Matern parameter 
 %            th0(5/6)=rho  The third Matern parameter 
-% truecov    The theoretical covariance matrix
+% covF       The covariance matrix based on the Fisher matrix at the truth
+% covHav     The covariance matrix based on the average Hessian matrix
 % E          Young's modulus (not used for single fields)
 % v          Poisson's ratio (not used for single fields)
 % params     The structure with the fixed parameters from the experiment
@@ -28,7 +29,7 @@ function varargout=mleplos(thhats,th0,truecov,E,v,params,name)
 %
 % This only gets used in MLEOS/MLEROS/MLEROS0/MLEOSL thus far
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/08/2014
+% Last modified by fjsimons-at-alum.mit.edu, 02/11/2015
 
 % Number of times the standard deviation for scale truncation
 nstats=[-3:3]; fax=3;
@@ -64,15 +65,20 @@ clf
 % For each of the parameters
 for ind=1:np
   % The empirical means and standard deviations of the estimates
-  mthh=mean(thhats(:,ind));
-  sthh=std(thhats(:,ind));
+  mobs=mean(thhats(:,ind));
+  sobs=std(thhats(:,ind));
 
   % The theoretical means and standard deviations for any one estimate
-  truemth=th0(ind);
-  if ~isempty(truecov)
-    truesth=real(sqrt(truecov(ind,ind)));
+  th0i=th0(ind);
+  if ~isempty(covF)
+    stdF=real(sqrt(covF(ind,ind)));
   else
-    truesth=NaN;
+    stdF=NaN;
+  end
+  if ~isempty(covHav)
+    stdH=real(sqrt(covHav(ind,ind)));
+  else
+    stdH=NaN;
   end
 
   % HISTOGRAMS
@@ -86,23 +92,30 @@ for ind=1:np
     bdens=bdens/indeks(diff(c),1)/size(thhats(:,ind),1);
   end
   % This number is close to one... it's a proper density!
-  % disp(sprintf('Integral = %g',sum(bdens)*indeks(diff(c),1)))
+  disp(sprintf('Integral = %g',sum(bdens)*indeks(diff(c),1)))
+
   % Now plot it using a scale factor to remove the units from the y axis
-  thhis(ind)=bar(c,sthh*bdens,1);
+  thhis(ind)=bar(c,sobs*bdens,1);
   set(ah(ind),'ylim',yls)
-  stats=mthh+nstats*sthh;
+  stats=mobs+nstats*sobs;
   % What is the percentage captured within the range?
   nrx=20; nry=15;
   set(ah(ind),'xlim',stats([1 end]),'xtick',stats,'xtickl',nstats)
   hold on
-  p0(ind)=plot([truemth truemth],ylim,'k-');
+  p0(ind)=plot([th0i th0i],ylim,'k-');
   halfup=indeks(ylim,1)+range(ylim)/2;
-  ps(ind)=plot(truemth+[-1 1]*truesth,...
+  % Covariance based on the Fisher matrix
+  ps(ind)=plot(th0i+[-1 1]*stdF,...
 	       [halfup halfup],'k-'); 
   delete(ps(ind))
   % Plots the normal with the predicted means and variances
-  xnorm=linspace(nstats(1),nstats(end),100)*sthh+mthh;
-  ps(ind)=plot(xnorm,sthh*normpdf(xnorm,truemth,truesth));
+  xnorm=linspace(nstats(1),nstats(end),100)*sobs+mobs;
+  % Based on the Fisher matrix
+  ps(ind)=plot(xnorm,sobs*normpdf(xnorm,th0i,stdF));
+  % Based on the average Hessian matrix
+  pha(ind)=plot(xnorm,sobs*normpdf(xnorm,th0i,stdH),'--');
+  % Based on the actually observed covariance of these data
+  po(ind)=plot(xnorm,sobs*normpdf(xnorm,th0i,sobs),'-');
 
   % Some annotations
   % Experiment size, he giveth, then taketh away
@@ -114,10 +127,10 @@ for ind=1:np
 
   % The percentage covered in the histogram that is being shown
   tt(ind)=text(stats(1)+range(stats)/nrx,indeks(ylim,2)-2*range(ylim)/nry,...
-	      sprintf('s/%s = %5.2f','\sigma',sthh/truesth)); 
+	      sprintf('s/%s = %5.2f','\sigma',sobs/stdF)); 
   fb=fillbox(ext2lrtb(tt(ind),[],0.8),'w'); delete(tt(ind)); set(fb,'EdgeC','w')
   tt(ind)=text(stats(1)+range(stats)/nrx,indeks(ylim,2)-2*range(ylim)/nry,...
-	      sprintf('s/%s = %5.2f','\sigma',sthh/truesth));
+	      sprintf('s/%s = %5.2f','\sigma',sobs/stdF));
 
   % The ratio of the observed to the theoretical standard deviation
   t(ind)=text(stats(1)+range(stats)/nrx,indeks(ylim,2)-range(ylim)/nry,...
@@ -141,21 +154,21 @@ for ind=1:np
   set(ah(ind+np),'ylim',stats([1 end]),'ytick',stats,...		       
 		'ytickl',round(rondo*stats/sclth0(ind))/rondo);
   hold on
-  e(ind)=plot(xlim,[mthh mthh],'k:');
+  e(ind)=plot(xlim,[mobs mobs],'k:');
   f(ind)=plot([0 0],ylim,'k:');
   bottom(e(ind),ah(ind+np))
   bottom(f(ind),ah(ind+np))
   set(ah(ind+np),'plotbox',[1 1 1])
   if sclth0(ind)~=1
     tl(ind)=title(sprintf('%s = %5.3f %s %4.0e %s',labs{ind},...
-			  mthh/sclth0(ind),'x',...
+			  mobs/sclth0(ind),'x',...
 			  sclth0(ind),unts{ind}));
     xl0(ind)=xlabel(sprintf('%s = %5.3f %s %4.0e %s',labs0{ind},...
 			    th0(ind)/sclth0(ind),'x',...
 			    sclth0(ind),unts{ind}));
   else
     tl(ind)=title(sprintf('%s = %5.3f %s',labs{ind},...
-			  mthh/sclth0(ind),...
+			  mobs/sclth0(ind),...
 			  unts{ind}));
     xl0(ind)=xlabel(sprintf('%s = %5.3f %s',labs0{ind},...
 			    th0(ind)/sclth0(ind),...
@@ -187,6 +200,11 @@ axes(ah(1))
 yl=ylabel('posterior probability density');
 longticks(ah)
 set(ps,'linew',1,'color','k')
+set(pha,'linew',1,'color','r')
+set(po,'linew',2,'color',grey(3.5))
+% FOCUS ON THE COVF first and foremost, the mean/median Hessians are
+% sometimes out of control even though the solutions look really good
+delete(pha)
 nolabels(ah(2:np),2)
 fig2print(gcf,'landscape')
 
@@ -202,7 +220,7 @@ end
 
 % We are quoting the TRUTHS and the THEORETICAL standard deviation with
 % which it can be known using the available data
-[answ,answs]=osansw(th0,truecov,E,v);
+[answ,answs]=osansw(th0,covF,E,v);
 tt=supertit(ah(np+1:2*np),sprintf(answs,answ{:}));
 if np>3
   movev(tt,-4)

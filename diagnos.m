@@ -1,5 +1,5 @@
-function [thhat,thini,tseiter,scl,L,gam,hes,optis]=diagnos(fname,ddir,np)
-% [thhat,thini,tseiter,scl,L,gam,hes,optis]=DIAGNOS(fname,ddir,np)
+function [thhat,thini,tseiter,scl,L,gam,hes,optis,momx,covh]=diagnos(fname,ddir,np)
+% [thhat,thini,tseiter,scl,L,gam,hes,optis,momx,covh]=DIAGNOS(fname,ddir,np)
 %
 % Reads in a single file with diagnostics from MLEOS, MLEROS0, MLEROS.
 %
@@ -22,14 +22,16 @@ function [thhat,thini,tseiter,scl,L,gam,hes,optis]=diagnos(fname,ddir,np)
 % scl      The scaling applied as part of the optimization procedure
 % L        The likelihood of this solution
 % gam      The score, or first derivative of the likelihood
-% hes      The hessian, second derivative of the likelihood
+% hes      The Hessian, second derivative of the likelihood
 % optis    The first-order optimality condition returned by FMINUNC
+% momx     The various moments of the quadratic piece of the likelihood
+% covh     The asymptotic covariances derived from the Hessian
 %
 % SEE ALSO:
 %
 % OSOPEN, OSLOAD (with which it needs to match!)
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/02/2014
+% Last modified by fjsimons-at-alum.mit.edu, 02/11/2015
 
 defval('ddir','/u/fjsimons/PROGRAMS/MFILES/olhede4')
 defval('fname','mleosl_diagn_02-Oct-2014')
@@ -39,13 +41,13 @@ defval('np',5)
 % The number of unique entries in an np*np symmetric matrix
 npp=np*(np+1)/2;
 
-% The number of sample variances that will be read
+% The number of sample variances that will be read - reset below
 defval('nvar',2)
 
 % Get a rough estimate of the number of estimates from the size
 % You want this number to err on the side of being too large!
 if np==3
-  nsize=300; nvar=1;
+  nsize=450; nvar=1;
 elseif np==5
   nsize=560;
 elseif np==6
@@ -53,13 +55,16 @@ elseif np==6
 end
 ndim=ceil(fsize(fullfile(ddir,fname))/nsize);
 
+% Initialize
 tseiter=nan(ndim,3);
 L=nan(ndim,1);
 optis=nan(ndim,1);
-% Make room for the variance
+momx=nan(ndim,3);
+% Make room for the data sample variance(s)
 thhat=deal(nan(ndim,np+nvar));
 [thini,gam]=deal(nan(ndim,np));
 hes=nan(ndim,npp);
+covh=nan(ndim,npp);
 
 % Rarely, in SPMD mode does the file get written too quickly and does a
 % confusion between labs happen - look into the file and fix easily
@@ -78,16 +83,27 @@ for index=1:ndim
   thhat(index,:)=fscanf(fid,'%e',np+nvar);
   % Three diagnostics (time taken, exitflag, number of iterations)
   tseiter(index,:)=fscanf(fid,'%i',3); 
-  % The likelihood
-  L(index)=fscanf(fid,'%e',1); L(index);
+  try
+    % The likelihood
+    L(index)=fscanf(fid,'%e',1);L(index)
+  catch
+    % Tell if you're wrong
+    L(index-1)
+    sprintf('%12.8g',thhat(index-1,3))
+    break
+  end
   % The first-order optimality criterion
   optis(index)=fscanf(fid,'%e',1);
+  % The two moments of Xk, and the magic parameter
+  momx(index,:)=fscanf(fid,'%e',3);
   % The scalings
   scl(index,:)=fscanf(fid,'%e',np);
   % The scores
   gam(index,:)=fscanf(fid,'%e',np);
-  % The Hessian elements
+  % The scaled Hessian elements at the solution
   hes(index,:)=fscanf(fid,'%f',npp);
+  % The unscaled covariance from the Hessian at the solution
+  covh(index,:)=fscanf(fid,'%f',npp);
 end
 fclose(fid);
 
@@ -102,8 +118,10 @@ scl=scl(1:index,:);
 L=L(1:index,:);
 gam=gam(1:index,:);
 hes=hes(1:index,:);
+covh=covh(1:index,:);
 optis=optis(1:index,:);
+momx=momx(1:index,:);
 
 % Put out
-varns={thhat,thini,tseiter,scl,L,gam,hes,optis};
+varns={thhat,thini,tseiter,scl,L,gam,hes,optis,momx,covh};
 varargout=varns(1:nargout);

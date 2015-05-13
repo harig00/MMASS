@@ -16,7 +16,7 @@ function oswzerob(fid,th0,params,options,bounds,fmt1,fmt2)
 %
 % OSWZEROE, OSRZERO
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/20/2014
+% Last modified by fjsimons-at-alum.mit.edu, 02/09/2015
 
 % Commit the truth to file
 fprintf(fid,'%s\n','the true parameter vector');
@@ -24,6 +24,7 @@ fprintf(fid,fmt1,th0);
 
 % Commit the parameters of the experiment to file
 fprintf(fid,'%s\n','the fixed experimental parameters');
+
 %fprintf(fid,fmt2,struct2array(params));
 % Rather, these need to be ordered to yield to the format
 fulls={'DEL','g','z2','dydx','NyNx','blurs','kiso'};
@@ -49,4 +50,3 @@ end
 % Commit the parameters of the optimization to file
 fprintf(fid,'%s\n','the optimization options');
 struct2str(options,fid)
-

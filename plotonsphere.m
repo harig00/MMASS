@@ -1,5 +1,5 @@
-function plotonsphere(data,rang)
-% PLOTONSPHERE(data,rang)
+function plotonsphere(data,rang,conts)
+% PLOTONSPHERE(data,rang,conts)
 %
 % Plots data as topography and colors onto a sphere.
 %
@@ -8,6 +8,7 @@ function plotonsphere(data,rang)
 % data     Standard 2D geographic data; i.e. the first column is the
 %          Greenwich meridian in the x-z plane.
 % rang     Exaggeration of topography compared to 1 [default: 0]
+% conts    1 With continents (default: 0)
 %
 % See PLOTONEARTH, PLOTPLM
 %
@@ -57,6 +58,20 @@ if ~isstr(data)
   shading flat
 
   axis off
+  defval('conts',0)
+  if conts==1
+    % Plot the continents
+    lx=xtraxis;
+    [jk1,jk2,cont]=plotcont([0 90],[360 -90]);
+    delete(lx)
+    lonc=cont(:,1)/180*pi;
+    latc=cont(:,2)/180*pi;
+    rad=repmat(1+rang,size(latc));
+    [xx,yy,zz]=sph2cart(lonc,latc,rad);
+    hold on
+    pc=plot3(xx,yy,zz,'k-','LineWidth',1.5);
+    hold off
+  end
 elseif strcmp(data,'demo1')
   d70=plotplm(7,0,1,2,5); 
   d72=plotplm(7,2,1,2,5);

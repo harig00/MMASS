@@ -1,10 +1,10 @@
 function varargout=covthos(th,params,k,scl)
-% [covth,covlin,F,Flin]=covthos(th,params,k,scl)
+% [covF,F]=covthos(th,params,k,scl)
 %
-% Calculates the entries of the covariance matrix of the estimate, indeed
-% the inverse Fisher matrix, hopefully close to the expectation of the
-% Hessian of the actual simulations. As seen in Olhede & Simons for the
-% UNCORRELATED Forsyth loading model.
+% Calculates the entries of the theoretical unblurred covariance matrix of
+% the estimate, indeed the inverse Fisher matrix, hopefully close to the
+% expectation of the Hessian of the actual simulations. As seen in Olhede &
+% Simons for the UNCORRELATED Forsyth loading model.
 %
 % INPUT:
 %
@@ -22,12 +22,10 @@ function varargout=covthos(th,params,k,scl)
 %
 % OUTPUT:
 %
-% covth    The covariance matrix between the parameters
-% covlin   The unwrapped covariance matrix, as printed
+% covF     The covariance matrix between the parameters
 % F        The SCALED Fisher matrix
-% Flin     The unwrapped SCALED Fisher matrix, as printed
 %
-% Last modified by fjsimons-at-alum.mit.edu, 09/26/2012
+% Last modified by fjsimons-at-alum.mit.edu, 10/25/2014
 
 % Default scaling is none
 defval('scl',ones(size(th)))
@@ -69,31 +67,10 @@ F(3,5)=mcF{14};
 % These will be the covariances of nu with others
 F(4,5)=mcF{15};
 
-% Construct the UNSCALED Fisher matrix
-F=[triu(F)'+triu(F)-diag(diag(F))]; 
-
-% Any NaN's above came from zeroes in the wavenumbers
-warning off MATLAB:nearlySingularMatrix
-% Note that only the half plane is statistically independent so when
-% working in the whole plane our variance would have looked too small
-isfullplane=1; 
-ishalfplane=0;
-if isfullplane==1
-  disp('I am assuming that your wavenumbers are the entire plane')
-  covth=inv(F)/length(k(~~k))*2;
-elseif ishalfplane==1
-  disp('I am assuming that your wavenumbers are the half plane')
-  covth=inv(F)/length(k(~~k));
-end
-warning on MATLAB:nearlySingularMatrix
-
-% This as printed for reading by DIAGNOS
-% Unwrapped and in the unscaled dimensions of the problem
-covlin=tril(covth); covlin=covlin(~~covlin)';
-% Unwrapped and in the scaled dimensions of the problem
-F=[scl(:)*scl(:)'].*F;
-Flin=tril(F); Flin=Flin(~~Flin)';
+% Returns the unscaled covariance matrix and the scaled Fisher matrix
+disp('I am assuming that your wavenumbers are the entire plane')
+[covF,F]=fish2cov(F,scl,length(k(~~k))*2);
 
 % Output
-varns={covth,covlin,F,Flin};
+varns={covF,F};
 varargout=varns(1:nargout);

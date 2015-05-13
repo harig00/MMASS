@@ -1,5 +1,5 @@
-function Hk=tospec(Hx,NyNx)
-% Hk=TOSPEC(Hx,NyNx)
+function Hk=tospec(Hx,p)
+% Hk=TOSPEC(Hx,p)
 %
 % Converts a vector of two-dimensional spatial-domain observations to the
 % spectral domain with the proper normalization and again returned as a
@@ -8,8 +8,9 @@ function Hk=tospec(Hx,NyNx)
 % INPUT:
 %
 % Hx       A real vector of spatial-domain entries
-% NyNx     The number of samples in the y and x directions which equals
-%          the size of the corresponding wavenumber matrix 
+% p        A parameter structure containing
+%          NyNx  The number of samples in the y and x directions which
+%                equals the size of the corresponding wavenumber matrix 
 %
 % OUTPUT:
 %
@@ -23,5 +24,6 @@ function Hk=tospec(Hx,NyNx)
 
 % This is all it is, really. Unitary transform if we
 % multiply IFFT by sqrt(prod(NyNx)) and divide FFT by it. 
-Hk=indeks(fftshift(fft2(reshape(Hx,NyNx))),':')...
-   /sqrt(prod(NyNx));
+% New thing is that we stick the actual physical dimension in here 
+Hk=indeks(fftshift(fft2(reshape(Hx,p.NyNx))),':')...
+   /sqrt(prod(p.NyNx))*sqrt(prod(p.dydx));

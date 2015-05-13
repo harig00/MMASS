@@ -6,7 +6,7 @@ function t=ostitle(ah,params,ovall,numsim)
 % INPUT:
 %
 % ah          Axis handles over which to put the title
-% params      Parameter structure that make it into the title string, vector or structure
+% params      Parameter structure of the experiment
 % ovall       Overall plot title for identification
 % numsim      Number of simulations to work in the title
 %
@@ -14,7 +14,7 @@ function t=ostitle(ah,params,ovall,numsim)
 %
 % t           Title handle
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/19/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/24/2014
 
 defval('ovall','')
 defval('numsim','')

@@ -53,8 +53,7 @@ switch pph
 
   % Number of lifting steps------------------------
   M=1;
-  
-  if iscell(Pa); M=length(Pa); end
+    if iscell(Pa); M=length(Pa); end
 
   % Loop over lifting steps------------------------
   for index=1:M

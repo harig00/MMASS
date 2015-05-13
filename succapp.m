@@ -4,7 +4,7 @@ function varargout=succapp(tipe,nvm,nd,x0,pph,intel)
 % 
 % 'tipe': 'Daubechies' or 'CDF'
 % 'nvm': Number of vanishing (primal & dual) moments 
-% 'nd' : number of decompositions
+% 'nd' : number of decompositions (levels)
 % 'x0' : signal
 %
 % Illustrates the use of my functions 'wt' and 'iwt'
@@ -21,6 +21,8 @@ function varargout=succapp(tipe,nvm,nd,x0,pph,intel)
 % succapp('CDF',[2 2],5,x0)
 % succapp('CDF',[2 4],5,x0)
 % succapp('CDF',[4 2],5,x0)
+%
+% Last modified by fjsimons-at-alum.mit.edu, 02/17/2015
 
 defval('tipe','Daubechies')
 defval('nvm',2)
@@ -72,8 +74,8 @@ if ~nargout
   for index=2:length(ah)
     axes(ah(index))
     [p(index),l(index-1),c(index-1)]=...
-	plotc(x0,sum(x1(:,1:index-1),2),tloc,...
-	      tloc2,cf(index-1));
+        plotc(x0,sum(x1(:,1:index-1),2),tloc,...
+              tloc2,cf(index-1));
     yl(index-1)=ylabel(sprintf('N= %i',nuco(index-1)));
   end
   set(ah,'ylim',mmy,'xlim',mmx)
@@ -81,6 +83,8 @@ if ~nargout
   set([l c],'HorizontalA','Right')
   xlabel(sprintf('%s %i,%i',tipe,nvm))
 
+  figdisp([],1)
+  
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   figure(2)
   clf
@@ -94,6 +98,7 @@ if ~nargout
   p=dyadplot(x0,a,d,an,dn,[],1);
   ac=colorbar('hor');axes(ac)
   xlabel(sprintf('%s %i,%i',tipe,nvm))
+  figdisp([],2)
 			
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   figure(3)
@@ -107,7 +112,8 @@ if ~nargout
   set(gca,'TickDir','out','TickLength',[0.02 0.025]/2)
   xlim([1 length(x0)])
   xlabel(sprintf('%s %i,%i',tipe,nvm))
-  
+  figdisp([],3)
+
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   figure(4)
   clf
@@ -139,18 +145,8 @@ if ~nargout
   xlabel(sprintf('%s %i,%i',tipe,nvm))
   set(ah,'ylim',mmy,'xlim',mmx)
   nolabels(ah(1:end-1),1)
-  set([l c],'HorizontalA','Right')
-
-  %------------------------------------------
-  disp(['figure(1); print(''-depsc'',''/home/fjsimons/GifPix/EPS/SA-1-' ...
-	'X'')'])
-  disp(['figure(2); print(''-depsc'',''/home/fjsimons/GifPix/EPS/SA-2-' ...
-	'X'')'])
-  disp(['figure(3); print(''-depsc'',''/home/fjsimons/GifPix/EPS/SA-3-' ...
-	'X'')'])
-  disp(['figure(4); print(''-depsc'',''/home/fjsimons/GifPix/EPS/SA-4-' ...
-	'X'')'])
-  
+  set([l c],'HorizontalA','Right')  
+  figdisp([],4)
 end
 %------------------------------------------
 varnam={ 'a' 'd' 'an' 'dn' 'x1'};

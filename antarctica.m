@@ -20,8 +20,6 @@ function varargout=antarctica(res)
 % 
 % Last modified by fjsimons-at-alum.mit.edu, 07/11/2012
 
-NEED UPDATE FROM CHRIS!!
-
 defval('res',0)
 
 % The directory where you keep the coordinates

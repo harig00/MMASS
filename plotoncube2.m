@@ -159,10 +159,8 @@ defval('dfit',NaN)
 t(10)=text(xloc,1.25,...
 	  sprintf('datafit = %s',dfit));
 defval('scalingthreshold','off')
-t(11)=text(xloc,1.00...
+t(11)=text(xloc,1.00,...
 	  sprintf('thresh scaling = %s',scalingthreshold));
-
-keyboard
 
 % Cosmetics
 fig2print(gcf,'portrait')

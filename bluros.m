@@ -16,20 +16,7 @@ function Sbar=bluros(S,params,xver)
 %
 % Sbar    The blurred spectral matrix, interpolated to original dimension
 %
-% EXAMPLE:
-%
-% [Hx,th0,p]=simulosl;
-% N=256; h=nan(N-1,1); for index=2:N; p.NyNx=[index index]; 
-% Hx=simulosl(th0,p);                       
-% h(index-1)=var(Hx)*(2*pi)^2/prod(p.dydx); end
-% plot(2:N,h); xlim([1 N]); ylim([0 4e-3]); longticks; shrink(gca);
-% t=title(sprintf('SIMULOSL with blurs = 2, var(Hx) versus %s^2 = %g','\sigma',th0(1)))
-% movev(t,5/1000); grid on; xlabel('data size Nx = Ny');
-% ylabel('var(Hx)*(2pi)^2/(dydx)'); 
-% set(gca,'ytick',[0 th0(1) indeks(ylim,2)])
-% print('-depsc','/u/fjsimons/EPS/simulosl')
-%
-% Last modified by fjsimons-at-alum.mit.edu, 10/20/2014
+% Last modified by fjsimons-at-alum.mit.edu, 01/15/2015
 
 % Set defaults
 defval('xver',1)

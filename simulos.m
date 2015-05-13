@@ -45,12 +45,13 @@ function varargout=simulos(th0,params,xver)
 % simulos('demo1')
 % simulos('demo2')
 % simulos('demo3')
+% simulos('demo4') % Tests the bias in estimating the variance poorly
 %
 % SEE ALSO:
 %
 % MLEOS, LOADING, SIMULROS
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/13/2014
+% Last modified by fjsimons-at-alum.mit.edu, 11/11/2014
 
 % Check how it behaves when NOT a power of two! FFT should still be exact
 % so wouldn't matter. Implement the windowing!
@@ -172,9 +173,9 @@ if ~isstr(th0)
   Gk=2*pi*G*DEL(2)*exp(-k(:).*z2).*Hk(:,2);
 
   % And go to the space domain - unitary transform
-  Hx(:,1)=tospace(Hk(:,1),NyNx);
-  Hx(:,2)=tospace(Hk(:,2),NyNx);
-  Gx     =tospace(Gk     ,NyNx);
+  Hx(:,1)=tospace(Hk(:,1),params);
+  Hx(:,2)=tospace(Hk(:,2),params);
+  Gx     =tospace(Gk     ,params);
 
   % Return the output if requested
   varns={Hx,Gx,th0,params,k,Hk,Gk,Sb,Lb};

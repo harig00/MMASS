@@ -43,7 +43,7 @@ function lmcosi=plm2pot(lmcosi,r,GM,a,wat,wit)
 %
 % Last modified by charig-at-princeton.edu, 02/23/2012
 % Last modified by kwlewis-at-princeton.edu, 02/23/2012
-% Last modified by fjsimons-at-alum.mit.edu, 05/24/2013
+% Last modified by fjsimons-at-alum.mit.edu, 03/14/2015
 
 % Should write something that involves the geoid kernels and compares the
 % dynamic ones with the load-Love ones. 
@@ -62,8 +62,8 @@ if ~isstr(lmcosi)
   % Note this is always in here, don't confuse when using PLM2XYZ
   GMr=GM/r;
   
-  % Blakely Eq (7.2)
   el=lmcosi(:,1);
+  % Blakely Eq (7.2)
   arl=(a/r).^el;
   
   % Published elastic Love numbers from Wahr et al. (1998).  
@@ -119,9 +119,11 @@ if ~isstr(lmcosi)
 	    1 0 0 0 repmat(0,1,size(lmcosi,2)-4); % Degree 1 order 0
 	    1 1 0 0 repmat(0,1,size(lmcosi,2)-4); % Degree 1 order 1
 	    lmcosi]; % Then the rest
+    fact=[repmat(1,3,size(lmcosi,2)-4); fact];
   elseif lmcosi(1)==1 && lmcosi(1,2)==0
     lmcosi=[0 0 GMr 0 repmat(0,1,size(lmcosi,2)-4); % Degree 0
 	    lmcosi]; % Then the rest
+    fact=[repmat(1,1,size(lmcosi,2)-4); fact];
   end
 
   switch wit

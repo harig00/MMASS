@@ -1,5 +1,5 @@
-function Hx=tospace(Hk,NyNx)
-% Hx=TOSPACE(Hk,NyNx)
+function Hx=tospace(Hk,p)
+% Hx=TOSPACE(Hk,p)
 %
 % Converts a vector of two-dimensional spectral-domain observations to
 % the space domain with the proper normalization and again returned as a
@@ -8,8 +8,9 @@ function Hx=tospace(Hk,NyNx)
 % INPUT:
 %
 % Hk       A complex vector of Fourier-domain entries
-% NyNx     The number of samples in the y and x directions, which equals
-%          the size of the corresponding wavenumber matrix 
+% p        A parameter structure containing
+%          NyNx  The number of samples in the y and x directions which
+%                equals the size of the corresponding wavenumber matrix 
 %
 % OUTPUT:
 %
@@ -19,9 +20,10 @@ function Hx=tospace(Hk,NyNx)
 %
 % TOSPEC
 % 
-% Last modified by fjsimons-at-alum.mit.edu, 01/05/2012
+% Last modified by fjsimons-at-alum.mit.edu, 02/05/2015
 
 % This is all it is, really. Unitary transform if we
 % multiply IFFT by sqrt(prod(NyNx)) and divide FFT by it. 
-Hx=realize(indeks(ifft2(ifftshift(reshape(Hk,NyNx))),':')...
-	   *sqrt(prod(NyNx)));
+% New thing is that we stick the actual physical dimension in here 
+Hx=realize(indeks(ifft2(ifftshift(reshape(Hk,p.NyNx))),':')...
+	   *sqrt(prod(p.NyNx))/sqrt(prod(p.dydx)));

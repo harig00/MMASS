@@ -26,6 +26,8 @@ function [a,d,xout,err]=wtlift(x,tipe,N,M,intel)
 % [a,d,xout,err]=wtlift(x+rand(size(x))+1);
 %
 % See also LIFTCO, FBANK, ABANK, SBANK.
+%
+% % Last modified by fjsimons-at-alum.mit.edu, 05/22/2012
 
 t0=clock;
 

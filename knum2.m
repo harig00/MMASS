@@ -1,11 +1,11 @@
 function [K,kx,ky,dci,dcn,dx,dy]=knum2(mn,pl)
 % [K,kx,ky,dci,dcn,dx,dy]=knum2([M N],[lY lX])
 %
-% Wavenumber axis of a 2D Fourier transform, suitable after FFTSHIFT and
-% for wavenumber manipulation to ensure Hermitian symmetry with IFFT. The
+% Wavenumber axis for a 2D Fourier transform, suitable after FFTSHIFT and
+% for manipulation ensuring real-field Hermitian symmetry under IFFT. The
 % wavenumbers increase symmetrically away from zero, but the Nyquist
-% frequency is only reached on the top and/or left parts of the
-% dimensions that have an even number of samples.
+% frequency is only reached on the top and/or left parts of the dimensions
+% that have an even number of samples.
 %
 % INPUT:
 % 
@@ -43,7 +43,7 @@ function [K,kx,ky,dci,dcn,dx,dy]=knum2(mn,pl)
 %
 % SEE ALSO: FFTAXIS, FFTAXIS1D, KNUM, RANDGPN, BRACEWELL
 %
-% Last modified by fjsimons-at-alum.mit.edu, 04/08/2014
+% Last modified by fjsimons-at-alum.mit.edu, 03/02/2015
 
 % Supply defaults for testing
 defval('mn',[32 32]+round(rand))

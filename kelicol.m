@@ -5,7 +5,7 @@ function varargout=kelicol(wit)
 %
 % INPUT:
 %
-% wit   1 Make center range of this+1 many values really white
+% wit   1 Make center range of this+1 many values really white [default: 0]
 %
 % Last modified by fjsimons-at-alum.mit.edu, 09/12/2012
 

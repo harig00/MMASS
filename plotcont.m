@@ -1,5 +1,5 @@
-function varargout=plotcont(c11,cmn,res,ofs,pcol)
-% [axlim,handl,XYZ]=PLOTCONT(c11,cmn,res,ofs,pcol)
+function varargout=plotcont(c11,cmn,res,ofs,pcol,lolax)
+% [axlim,handl,XYZ]=PLOTCONT(c11,cmn,res,ofs,pcol,lolax)
 % 
 % INPUT:
 %
@@ -16,8 +16,10 @@ function varargout=plotcont(c11,cmn,res,ofs,pcol)
 %        8 The world's coastlines from the NOAA>NESDIS>NGDC>MGGD database
 %        9 Plot this on the two-dimensional cubed sphere
 %        10 Global Mollweide projection centered on Greenwich
+%        11 Three-dimensional flattened obstructed view centered on an axis
 % ofs    Longitude offset, e.g. 360 degrees [only for 0,1,5,6,7]
 % pcol   The patch color in case option 7 is chosen [default: grey]
+% lolax  View axis when res==11
 %
 % Longitude ranges from 0 to 360; plots are centered on the PACIFIC.
 %
@@ -36,7 +38,7 @@ function varargout=plotcont(c11,cmn,res,ofs,pcol)
 %
 % SEE ALSO: MAPROTATE, SPHAREA, PHICURVE, RCENTER
 %
-% Last modified by fjsimons-at-alum.mit.edu, 06/28/2010
+% Last modified by fjsimons-at-alum.mit.edu, 03/13/2015
 
 % Saved matrix as space-saving unsigned integer 
 % - but that translates the NaN's into some  high number - take that out.
@@ -72,7 +74,7 @@ switch res
   fid=fopen(fullfile(ddir,'cont.mtl'),'r','b');
   cont=fread(fid,[5217 2],'uint16');
   fclose(fid);
- case {1,3,4}
+ case {1,3,4,11}
   fid=fopen(fullfile(ddir,'cost.mtl'),'r','b');  
   cont=fread(fid,[9598 2],'uint16');
   fclose(fid);
@@ -103,7 +105,7 @@ end
 
 % Recast data in good form
 switch res
-  case {0,1,3,4,7,9}
+  case {0,1,3,4,7,9,11}
    cont=cont/100-90;
    cont(cont==max(max(cont)))=NaN;
 end
@@ -198,6 +200,48 @@ switch res
   % XYZ=[lon+ofs lat];
   % Rather return the processed coordinates
   XYZ=[nx ; ny];
+ case 11
+  % This from LORIS1 and EOS1
+  lon=lolax(1);
+  lat=lolax(2);
+  % Set view angles ahead of time as an explicit longitude and latitude
+  [xv,yv,zv]=sph2cart(lon*pi/180,lat*pi/180,1);
+
+  % Convert to spherical coordinates
+  lonc=cont(:,1)/180*pi;
+  latc=cont(:,2)/180*pi;
+  rara=1.01;
+  radc=repmat(rara,size(latc));
+  % Convert to Cartesian coordinates
+  [xx,yy,zz]=sph2cart(lonc,latc,radc);
+  XYZ=[xx yy zz];
+
+  % Inner product selectivity
+  yes=[xv yv zv]*XYZ'>0; 
+  % This protection from jumps is straight from PLOTCONT
+  XYZ=penlift(XYZ(yes,1:3));
+  % And then finally do it
+  skl=0.99;
+  handl(1)=plot3(XYZ(:,1)*skl,XYZ(:,2)*skl,XYZ(:,3)*skl,'k-');
+  hold on
+  % Plot a bit of the equator
+  [xe,ye,ze]=sph2cart(linspace(0,2*pi,100),0,rara);
+  xyze=[rotz(-lon*pi/180)*roty(-[90-lat]*pi/180)*[xe ; ye ; repmat(ze,1,length(ye))]]';
+  handl(2)=plot3(xyze(:,1),xyze(:,2),xyze(:,3),'k');
+  view([xv,yv,zv]); [AZ,EL]=view;
+  disp(sprintf('Azimuth: %i ; Elevation: %i',round(AZ),round(EL)))
+  axlim=[-1 1 -1 1 -1 1]*rara*1.01;
+  axis(axlim); axis off
+  % Where is the North Pole?
+  hold on
+  pnp=plot3(0,0,1,'MarkerF','k','MarkerE','k','Marker','o');
+  hold off
+  % Where is the Viewing Axis?
+  hold on
+  pva=plot3(xv,yv,zv,'MarkerF','k','MarkerE','k','Marker','o');
+  hold off
+  delete(pnp)
+  delete(pva)
 end
 
 % Generate output
@@ -207,4 +251,3 @@ varargout=vars(1:nargout);
 % Last-minute cosmetic adjustment
 axis equal
 hold off
-

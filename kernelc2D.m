@@ -3,6 +3,7 @@ function D=kernelc2D(XY,XYP,K)
 %
 % This function is used to calculate the two-dimensional Cartesian
 % spatiospectral concentration, i.e. Bessel, kernel.
+% See Simons and Wang, J. Geomathematics 2011, Eq. 54
 %
 % INPUT:
 %

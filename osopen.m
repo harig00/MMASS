@@ -1,5 +1,5 @@
 function [fid0,fid1,fid2,fid3,fmt1,fmt2,fmt3,fmtf,fmte,fmtd,fmtc,fmtb,fmta]=...
-    osopen(np,npp)
+    osopen(np)
 % [fid0,fid1,fid2,fid3,fmt1,fmt2,fmt3,fmtf,fmte,fmtd,fmtc,fmtb,fmta]=...
 %     OSOPEN(np,npp)
 %
@@ -8,16 +8,18 @@ function [fid0,fid1,fid2,fid3,fmt1,fmt2,fmt3,fmtf,fmte,fmtd,fmtc,fmtb,fmta]=...
 % INPUT:
 %
 % np     The number of parameters to solve for (e.g. 3, 5 or 6)
-% npp    The number of unique entries in an np*np symmetric matrix
 %
 % SEE ALSO:
 %
 % OSLOAD, DIAGNOS (with which it needs to match!)
 %
-% Last modified by fjsimons-at-alum.mit.edu, 10/06/2014
+% Last modified by fjsimons-at-alum.mit.edu, 10/22/2014
 
 % Who called? Work this into the filenames
 [~,n]=star69;
+
+% The number of unique entries in an np*np symmetric matrix
+npp=np*(np+1)/2;
 
 % Ouput files, in parallel might be a jumble
 % The thruth and the theoretical covariances
@@ -52,16 +54,17 @@ end
 
 % For the time, exit flag, iterations 
 fmta='%3i %3i %3i\n';
-% For the likelihood and first-order optimality
-fmtb='%15.8e %15.8e\n';
+% For the likelihood, first-order optimality, and moments
+fmtb='%15.8e %15.8e %15.8e %15.8e %15.8e\n';
 % For the scale
 fmtc=[repmat('%15.0e ',1,np) '\n'];
-% For the score
+% For the score, the gradient of the misfit function
 fmtd=[repmat('%15.8e ',1,np) '\n']; 
-% For the Hessian, with npp unique elements:
-fmte=repmat([repmat('%15.12f ',1,npp/3) '\n'],1,3); 
-% For the unscaled covariance matrix
+% For the Hessian of the misfit function, with npp unique elements 
+fmte=repmat([repmat('%15.12f ',1,npp/3) '\n'],1,3);
+% For the unscaled Hessian-derived covariance matrix, or 
+% for the unscaled theoretical covariance matrix
 fmtf=repmat([repmat('%19.12e ',1,npp/3) '\n'],1,3);
 
 % Lumps some of the formats together
-fmt3=[fmta fmtb fmtc fmtd fmte];
+fmt3=[fmta fmtb fmtc fmtd fmte fmtf];
